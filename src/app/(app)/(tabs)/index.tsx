@@ -4,81 +4,101 @@ import { observer } from '@legendapp/state/react';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { FlatList, LayoutAnimation, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutUp,
+  LinearTransition,
+} from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitCard } from '@/components/HabitCard';
 import { OverviewCard } from '@/components/OverviewCard';
 import { haptics } from '@/lib/haptics';
-import { isStoreHydrated, listHabits, statsForHabit, totalForHabit, type Habit } from '@/store';
+import {
+  isStoreHydrated,
+  listHabits,
+  statsForHabit,
+  totalForHabit,
+  type Habit,
+} from '@/store';
+
+// Shared spring so every element repositions with the same physical feel.
+const LAYOUT = LinearTransition.springify().damping(20).stiffness(180).mass(0.5);
+const ENTER = FadeIn.duration(260);
+const EXIT = FadeOut.duration(140);
 
 const Home = observer(function Home() {
   const habits = listHabits();
   const hydrated = isStoreHydrated();
   const [overview, setOverview] = useState(false);
 
-  function toggleOverview() {
-    haptics.selection();
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOverview((o) => !o);
-  }
+  const isEmpty = habits.length === 0;
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={habits}
-        keyExtractor={(h) => h.id}
-        renderItem={({ item }) =>
-          overview ? <OverviewCard habit={item} /> : <HabitCard habit={item} />
-        }
-        ListHeaderComponent={
-          <Header overview={overview} onToggle={toggleOverview} habits={habits} />
-        }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={hydrated ? <EmptyState /> : <SkeletonList />}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+    <Animated.ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}>
+      <Header overview={overview} onToggle={() => setOverview((o) => !o)} />
+
+      {overview && !isEmpty && (
+        <Animated.View entering={FadeInDown.springify().damping(20)} exiting={FadeOutUp.duration(160)} layout={LAYOUT}>
+          <Summary habits={habits} />
+        </Animated.View>
+      )}
+
+      {isEmpty ? (
+        hydrated ? (
+          <EmptyState />
+        ) : (
+          <SkeletonList />
+        )
+      ) : (
+        habits.map((habit, i) => (
+          <Animated.View key={habit.id} layout={LAYOUT} style={styles.item}>
+            <Animated.View
+              key={overview ? 'overview' : 'list'}
+              entering={ENTER.delay(i * 22)}
+              exiting={EXIT}>
+              {overview ? <OverviewCard habit={habit} /> : <HabitCard habit={habit} />}
+            </Animated.View>
+          </Animated.View>
+        ))
+      )}
+    </Animated.ScrollView>
   );
 });
 
 export default Home;
 
-function Header({
-  overview,
-  onToggle,
-  habits,
-}: {
-  overview: boolean;
-  onToggle: () => void;
-  habits: Habit[];
-}) {
+function Header({ overview, onToggle }: { overview: boolean; onToggle: () => void }) {
   const { theme } = useUnistyles();
   return (
     <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Your habits</Text>
-        <Pressable
-          hitSlop={12}
-          onPress={onToggle}
-          accessibilityRole="button"
-          accessibilityLabel={overview ? 'Show list' : 'Show overview'}
-          accessibilityState={{ selected: overview }}>
-          <SymbolView
-            name={overview ? 'square.grid.2x2.fill' : 'chart.bar.fill'}
-            size={24}
-            tintColor={overview ? theme.colors.ink : theme.colors.textSecondary}
-          />
-        </Pressable>
-      </View>
-
-      {overview && habits.length > 0 && <Summary habits={habits} />}
+      <Text style={styles.title}>Your habits</Text>
+      <Pressable
+        hitSlop={12}
+        onPress={() => {
+          haptics.selection();
+          onToggle();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={overview ? 'Show list' : 'Show overview'}
+        accessibilityState={{ selected: overview }}>
+        <SymbolView
+          name={overview ? 'square.grid.2x2.fill' : 'chart.bar.fill'}
+          size={24}
+          tintColor={overview ? theme.colors.ink : theme.colors.textSecondary}
+        />
+      </Pressable>
     </View>
   );
 }
 
-function Summary({ habits }: { habits: Habit[] }) {
+const Summary = observer(function Summary({ habits }: { habits: Habit[] }) {
   const totalAll = habits.reduce((sum, h) => sum + totalForHabit(h.id), 0);
   const avgPercent = habits.length
     ? Math.round(
@@ -93,7 +113,7 @@ function Summary({ habits }: { habits: Habit[] }) {
       <Stat value={`${avgPercent}%`} label="avg. completion" />
     </View>
   );
-}
+});
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -117,7 +137,7 @@ function SkeletonList() {
 function EmptyState() {
   const router = useRouter();
   return (
-    <View style={styles.empty}>
+    <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
       <Text style={styles.emptyTitle}>Start your first habit</Text>
       <Text style={styles.emptyBody}>
         Pick one small thing to do daily. Mark it done and watch the grid fill in.
@@ -132,7 +152,7 @@ function EmptyState() {
         }}>
         <Text style={styles.emptyButtonText}>Add your first habit</Text>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -146,15 +166,13 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingTop: rt.insets.top + theme.space.lg,
     paddingBottom: rt.insets.bottom + 96,
     flexGrow: 1,
+    gap: theme.space.md,
   },
   header: {
-    marginBottom: theme.space.xl,
-    gap: theme.space.lg,
-  },
-  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: theme.space.sm,
   },
   title: {
     fontSize: theme.font.title,
@@ -165,6 +183,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   summary: {
     flexDirection: 'row',
     gap: theme.space.xxxl,
+    paddingBottom: theme.space.xs,
   },
   stat: {
     gap: 2,
@@ -179,8 +198,8 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.font.caption,
     color: theme.colors.textSecondary,
   },
-  separator: {
-    height: theme.space.md,
+  item: {
+    width: '100%',
   },
   skeletonList: {
     gap: theme.space.md,
