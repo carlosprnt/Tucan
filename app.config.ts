@@ -47,8 +47,16 @@ const config: ExpoConfig = {
     ],
     'react-native-edge-to-edge',
     'expo-dev-client',
-    // Auth native modules (Google Sign-In, Apple Authentication) are added in
-    // the auth step, together with their OAuth credentials.
+    [
+      '@react-native-google-signin/google-signin',
+      {
+        // Reversed iOS OAuth client id, e.g. com.googleusercontent.apps.123-abc
+        iosUrlScheme:
+          process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME ??
+          'com.googleusercontent.apps.PLACEHOLDER',
+      },
+    ],
+    'expo-apple-authentication',
   ],
   experiments: {
     typedRoutes: true,
