@@ -35,7 +35,7 @@ function RootNavigator() {
     if (!session && !inAuthGroup) {
       router.replace('/(auth)/sign-in');
     } else if (session && inAuthGroup) {
-      router.replace('/(app)');
+      router.replace('/');
     }
   }, [initializing, session, segments, router]);
 

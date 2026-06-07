@@ -1,19 +1,16 @@
-import { use$ } from '@legendapp/state/react';
 import { Pressable, Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { auth$, signOut } from '@/store';
+import { signOut } from '@/store';
 
-// Placeholder home — becomes the "Today" tab screen in the next step.
-// For now it confirms the auth round-trip end to end.
-export default function Home() {
-  const email = use$(() => auth$.session.get()?.user.email ?? '');
-
+// Placeholder — the aggregated year-heatmap view is built in a later step.
+// Sign out lives here temporarily until the Settings screen exists.
+export default function Global() {
   return (
     <View style={styles.container}>
-      <View style={styles.center}>
-        <Text style={styles.brand}>Tucan</Text>
-        <Text style={styles.muted}>Signed in as {email}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Global</Text>
+        <Text style={styles.subtitle}>Year heatmap coming soon.</Text>
       </View>
       <Pressable
         style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
@@ -28,22 +25,21 @@ const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
-    paddingHorizontal: theme.space.xl,
-    paddingBottom: rt.insets.bottom + theme.space.xxl,
+    paddingHorizontal: theme.space.lg,
+    paddingTop: rt.insets.top + theme.space.lg,
+    paddingBottom: rt.insets.bottom + 96,
   },
-  center: {
+  header: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.space.sm,
+    gap: theme.space.xs,
   },
-  brand: {
+  title: {
     fontSize: theme.font.display,
     fontWeight: theme.weight.bold,
     letterSpacing: -1,
     color: theme.colors.textPrimary,
   },
-  muted: {
+  subtitle: {
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
   },
