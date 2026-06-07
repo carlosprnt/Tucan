@@ -210,12 +210,11 @@ const styles = StyleSheet.create((theme, rt) => ({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: theme.space.sm,
   },
   headerTitle: {
     flex: 1,
-    textAlign: 'center',
+    textAlign: 'left',
+    marginLeft: theme.space.xl,
     fontSize: theme.font.heading,
     fontWeight: theme.weight.bold,
     color: theme.colors.textPrimary,

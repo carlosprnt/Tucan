@@ -35,7 +35,7 @@ export const SparkleBurst = forwardRef<SparkleBurstHandle, { color?: string | nu
       () => ({
         play: () => {
           p.value = 0;
-          p.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.quad) });
+          p.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.quad) });
         },
       }),
       [p],

@@ -45,7 +45,11 @@ export function MonthCalendar({
 }: MonthCalendarProps) {
   const [width, setWidth] = useState(0);
   const sparkleRef = useRef<SparkleBurstHandle>(null);
-  const [burst, setBurst] = useState({ x: 0, y: 0 });
+  // Position via shared values so it's set synchronously before play() (avoids
+  // the sparkle appearing on the previously tapped cell).
+  const px = useSharedValue(0);
+  const py = useSharedValue(0);
+  const overlayStyle = useAnimatedStyle(() => ({ left: px.value, top: py.value }));
 
   const cellSize = width > 0 ? (width - GAP * 6) / 7 : 0;
   const glyphSize = cellSize * 0.76;
@@ -66,10 +70,8 @@ export function MonthCalendar({
       // becoming complete -> sparkle from the cell center
       const col = slot % 7;
       const row = Math.floor(slot / 7);
-      setBurst({
-        x: col * (cellSize + GAP) + cellSize / 2,
-        y: row * (cellSize + GAP) + cellSize / 2,
-      });
+      px.value = col * (cellSize + GAP) + cellSize / 2;
+      py.value = row * (cellSize + GAP) + cellSize / 2;
       sparkleRef.current?.play();
     }
     onToggleDay(key);
@@ -118,11 +120,11 @@ export function MonthCalendar({
             );
           })}
 
-          <View
+          <Animated.View
             pointerEvents="none"
-            style={{ position: 'absolute', left: burst.x, top: burst.y, width: 0, height: 0 }}>
+            style={[{ position: 'absolute', width: 0, height: 0 }, overlayStyle]}>
             <SparkleBurst ref={sparkleRef} color={color} />
-          </View>
+          </Animated.View>
         </View>
       )}
     </View>
@@ -163,8 +165,8 @@ function DayCell({
         onPress={() => {
           if (tappable) {
             scale.value = withSequence(
-              withTiming(1.18, { duration: 110 }),
-              withSpring(1, { damping: 9, stiffness: 200 }),
+              withTiming(1.12, { duration: 70 }),
+              withSpring(1, { damping: 18, stiffness: 300 }),
             );
           }
           onPress();

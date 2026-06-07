@@ -9,6 +9,6 @@ export function cascadeIn(index: number) {
     0: { opacity: 0, transform: [{ scale: 0.95 }] },
     100: { opacity: 1, transform: [{ scale: 1 }] },
   })
-    .duration(200)
-    .delay(Math.min(index, 60) * 8);
+    .duration(150)
+    .delay(Math.min(index, 60) * 6);
 }

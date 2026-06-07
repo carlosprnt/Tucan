@@ -40,7 +40,7 @@ export function TodayToggle({ done, onPress, color }: TodayToggleProps) {
   const sparkleRef = useRef<SparkleBurstHandle>(null);
 
   useEffect(() => {
-    progress.value = withSpring(done ? 1 : 0, { damping: 15, stiffness: 220 });
+    progress.value = withSpring(done ? 1 : 0, { damping: 19, stiffness: 280 });
   }, [done, progress]);
 
   const containerStyle = useAnimatedStyle(() => ({
@@ -62,8 +62,8 @@ export function TodayToggle({ done, onPress, color }: TodayToggleProps) {
       sparkleRef.current?.play(); // celebrate only when marking done
     }
     scale.value = withSequence(
-      withTiming(1.12, { duration: 120 }),
-      withSpring(1, { damping: 12, stiffness: 200 }),
+      withTiming(1.1, { duration: 70 }),
+      withSpring(1, { damping: 18, stiffness: 300 }),
     );
     onPress();
   }
@@ -73,10 +73,10 @@ export function TodayToggle({ done, onPress, color }: TodayToggleProps) {
       hitSlop={12}
       onPress={handlePress}
       onPressIn={() => {
-        scale.value = withTiming(0.86, { duration: 90 });
+        scale.value = withTiming(0.9, { duration: 70 });
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+        scale.value = withSpring(1, { damping: 18, stiffness: 300 });
       }}
       accessibilityRole="button"
       accessibilityState={{ checked: done }}
