@@ -30,6 +30,9 @@ const HabitDetail = observer(function HabitDetail() {
     );
   }
 
+  const onEdit = () =>
+    router.push({ pathname: '/habit/new', params: { id: habit.id } });
+
   const stats = statsForHabit(habit.id, habit.start_date);
   const dotSize = 12;
   const gap = 6;
@@ -47,7 +50,7 @@ const HabitDetail = observer(function HabitDetail() {
 
   return (
     <View style={styles.container}>
-      <Header onBack={() => router.back()} />
+      <Header onBack={() => router.back()} onEdit={onEdit} />
 
       <View style={styles.heading}>
         <View style={styles.iconWrap}>
@@ -76,12 +79,19 @@ const HabitDetail = observer(function HabitDetail() {
 
 export default HabitDetail;
 
-function Header({ onBack }: { onBack: () => void }) {
+function Header({ onBack, onEdit }: { onBack: () => void; onEdit?: () => void }) {
   const { theme } = useUnistyles();
   return (
-    <Pressable hitSlop={12} onPress={onBack} style={styles.back}>
-      <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
-    </Pressable>
+    <View style={styles.headerRow}>
+      <Pressable hitSlop={12} onPress={onBack} style={styles.back}>
+        <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
+      </Pressable>
+      {onEdit && (
+        <Pressable hitSlop={12} onPress={onEdit} style={styles.back}>
+          <SymbolView name="slider.horizontal.3" size={20} tintColor={theme.colors.textPrimary} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -101,6 +111,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.space.lg,
     paddingTop: rt.insets.top + theme.space.sm,
     gap: theme.space.xl,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   back: {
     width: 40,

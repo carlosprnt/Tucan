@@ -57,6 +57,7 @@ const config: ExpoConfig = {
       },
     ],
     'expo-apple-authentication',
+    '@react-native-community/datetimepicker',
   ],
   experiments: {
     typedRoutes: true,
