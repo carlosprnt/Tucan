@@ -18,6 +18,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { fromDateKey, toDateKey, todayKey, type DateKey } from '@/lib/date';
 import { HABIT_COLORS } from '@/lib/colors';
+import { haptics } from '@/lib/haptics';
 import {
   HABIT_ICON_SUGGESTIONS,
   HABIT_NAME_SUGGESTIONS,
@@ -50,15 +51,18 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const canSave = name.trim().length > 0;
 
   function pickSuggestion(s: { name: string; icon: SFSymbol }) {
+    haptics.selection();
     setName(s.name);
     setIcon(s.icon);
   }
 
   function onColorPress(value: string | null, premium: boolean) {
     if (premium && !isPremium) {
+      haptics.warning();
       Alert.alert('Premium color', 'Custom colors are a premium feature.');
       return;
     }
+    haptics.selection();
     setColor(value);
   }
 
@@ -81,11 +85,13 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     } else {
       createHabit(payload);
     }
+    haptics.success();
     router.back();
   }
 
   function onDelete() {
     if (!habitId) return;
+    haptics.warning();
     Alert.alert('Delete habit', 'This hides the habit and its history.', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -164,7 +170,10 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               return (
                 <Pressable
                   key={opt.key}
-                  onPress={() => setIcon(opt.key)}
+                  onPress={() => {
+                    haptics.selection();
+                    setIcon(opt.key);
+                  }}
                   style={[styles.iconCell, selected && { borderColor: accent }]}>
                   <SymbolView
                     name={opt.key}

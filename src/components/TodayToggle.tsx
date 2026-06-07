@@ -1,6 +1,25 @@
 import { SymbolView } from 'expo-symbols';
+import { useEffect } from 'react';
 import { Pressable } from 'react-native';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+
+import { haptics } from '@/lib/haptics';
+
+/*
+ * Reanimated shared-value writes (`sv.value = ...`) are the library's official
+ * API but trip the React Compiler's react-hooks/immutability rule. These writes
+ * only happen in event handlers / effects, never during render, so it's safe to
+ * disable that rule for this animation primitive.
+ */
+/* eslint-disable react-hooks/immutability */
 
 interface TodayToggleProps {
   done: boolean;
@@ -9,46 +28,69 @@ interface TodayToggleProps {
   color?: string | null;
 }
 
-/** Circular mark-today control: filled when done, outlined ring when not. */
+/** Circular mark-today control: spring fill + haptic when toggled. */
 export function TodayToggle({ done, onPress, color }: TodayToggleProps) {
   const { theme } = useUnistyles();
   const fill = color ?? theme.colors.dotDone;
+  const border = theme.colors.dotMissed;
+
+  const progress = useSharedValue(done ? 1 : 0);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    progress.value = withSpring(done ? 1 : 0, { damping: 15, stiffness: 220 });
+  }, [done, progress]);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    backgroundColor: interpolateColor(progress.value, [0, 1], ['rgba(0,0,0,0)', fill]),
+    borderColor: interpolateColor(progress.value, [0, 1], [border, fill]),
+  }));
+
+  const checkStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: progress.value }],
+  }));
+
+  function handlePress() {
+    if (done) haptics.light();
+    else haptics.medium();
+    scale.value = withSequence(
+      withTiming(1.12, { duration: 120 }),
+      withSpring(1, { damping: 12, stiffness: 200 }),
+    );
+    onPress();
+  }
 
   return (
     <Pressable
       hitSlop={12}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.base,
-        done ? { backgroundColor: fill, borderColor: fill } : styles.todo,
-        pressed && styles.pressed,
-      ]}>
-      {done && (
-        <SymbolView
-          name="checkmark"
-          size={18}
-          weight="bold"
-          tintColor={theme.colors.canvas}
-        />
-      )}
+      onPress={handlePress}
+      onPressIn={() => {
+        scale.value = withTiming(0.86, { duration: 90 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+      }}
+      accessibilityRole="button"
+      accessibilityState={{ checked: done }}
+      accessibilityLabel={done ? 'Mark as not done today' : 'Mark as done today'}>
+      <Animated.View style={[styles.base, containerStyle]}>
+        <Animated.View style={checkStyle}>
+          <SymbolView name="checkmark" size={18} weight="bold" tintColor={theme.colors.canvas} />
+        </Animated.View>
+      </Animated.View>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(() => ({
   base: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-  },
-  todo: {
-    backgroundColor: 'transparent',
-    borderColor: theme.colors.dotMissed,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 }));

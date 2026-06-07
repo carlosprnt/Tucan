@@ -41,13 +41,15 @@ const sharedTokens = {
   radius: {
     sm: 8,
     md: 16,
-    lg: 24,
+    lg: 26,
+    xl: 32,
     pill: 999,
   },
   // Type scale — display numerals dominate.
   font: {
-    display: 48,
-    title: 28,
+    mega: 72,
+    display: 56,
+    title: 30,
     heading: 20,
     body: 16,
     caption: 13,
@@ -57,6 +59,7 @@ const sharedTokens = {
     medium: '500',
     semibold: '600',
     bold: '700',
+    heavy: '800',
   },
 } as const;
 

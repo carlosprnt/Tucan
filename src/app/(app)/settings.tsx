@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { DottedSeparator } from '@/components/DottedSeparator';
+import { haptics } from '@/lib/haptics';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { applyThemePref } from '@/lib/theme-control';
 import {
@@ -34,11 +36,13 @@ const Settings = observer(function Settings() {
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   function onSelectTheme(pref: ThemePref) {
+    haptics.selection();
     applyThemePref(pref);
     updateProfile({ theme_pref: pref });
   }
 
   async function onToggleReminder(value: boolean) {
+    haptics.light();
     // The root layout reschedules from the saved preference; just opt in here.
     if (value) await requestNotificationPermission();
     updateProfile({
@@ -58,7 +62,7 @@ const Settings = observer(function Settings() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       <View style={styles.headerRow}>
-        <Pressable hitSlop={12} onPress={() => router.back()} style={styles.back}>
+        <Pressable hitSlop={12} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" style={styles.back}>
           <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
         </Pressable>
         <Text style={styles.title}>Settings</Text>
@@ -131,9 +135,13 @@ const Settings = observer(function Settings() {
             {email}
           </Text>
         </View>
+        <DottedSeparator />
         <Pressable
           style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
-          onPress={() => signOut()}>
+          onPress={() => {
+            haptics.warning();
+            signOut();
+          }}>
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>
       </Section>

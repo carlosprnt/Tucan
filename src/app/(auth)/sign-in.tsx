@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { haptics } from '@/lib/haptics';
 import { isAppleAuthAvailable, signInWithApple, signInWithGoogle } from '@/lib/oauth';
 
 type Provider = 'google' | 'apple';
@@ -22,6 +23,7 @@ export default function SignIn() {
 
   async function run(provider: Provider, fn: () => Promise<void>) {
     if (busy) return;
+    haptics.light();
     setBusy(provider);
     try {
       await fn();

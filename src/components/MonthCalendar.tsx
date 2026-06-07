@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { type LayoutChangeEvent, Pressable, Text, View } from 'react-native';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { StyleSheet } from 'react-native-unistyles';
 
 import { daysBetween, type DateKey } from '@/lib/date';
+import type { DotState } from '@/lib/grid';
+import { haptics } from '@/lib/haptics';
+
+import { Glyph } from './Glyph';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const GAP = 8;
@@ -17,7 +21,7 @@ interface MonthCalendarProps {
   onToggleDay: (key: DateKey) => void;
 }
 
-/** Weekday-aligned month grid. Past/today cells (>= start) are tappable. */
+/** Weekday-aligned month grid of diamonds. Past/today cells (>= start) tap to toggle. */
 export function MonthCalendar({
   year,
   month,
@@ -27,12 +31,10 @@ export function MonthCalendar({
   color,
   onToggleDay,
 }: MonthCalendarProps) {
-  const { theme } = useUnistyles();
   const [width, setWidth] = useState(0);
 
   const cellSize = width > 0 ? (width - GAP * 6) / 7 : 0;
-  const dotSize = cellSize * 0.72;
-  const accent = color ?? theme.colors.dotDone;
+  const glyphSize = cellSize * 0.76;
 
   const firstDow = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -64,25 +66,27 @@ export function MonthCalendar({
             const isDone = completed.has(cell.key);
             const tappable = !isFuture && !beforeStart;
 
+            const state: DotState = beforeStart
+              ? 'empty'
+              : isFuture
+                ? 'future'
+                : isDone
+                  ? 'done'
+                  : 'missed';
+
             return (
               <Pressable
                 key={i}
                 disabled={!tappable}
-                onPress={() => onToggleDay(cell.key)}
+                accessibilityRole="button"
+                accessibilityLabel={cell.key}
+                accessibilityState={{ checked: isDone, disabled: !tappable }}
+                onPress={() => {
+                  haptics.light();
+                  onToggleDay(cell.key);
+                }}
                 style={{ width: cellSize, height: cellSize, alignItems: 'center', justifyContent: 'center' }}>
-                <View
-                  style={[
-                    { width: dotSize, height: dotSize, borderRadius: dotSize / 2 },
-                    beforeStart && { backgroundColor: 'transparent' },
-                    !beforeStart && isDone && { backgroundColor: accent },
-                    !beforeStart && !isDone && !isFuture && { backgroundColor: theme.colors.dotMissed },
-                    !beforeStart && isFuture && {
-                      backgroundColor: theme.colors.dotFutureBg,
-                      borderWidth: 1,
-                      borderColor: theme.colors.dotFutureBorder,
-                    },
-                  ]}
-                />
+                <Glyph size={glyphSize} state={state} color={color} />
               </Pressable>
             );
           })}

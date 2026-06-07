@@ -1,10 +1,12 @@
-import { useRef } from 'react';
-import { ScrollView, View } from 'react-native';
+import { type ReactNode, useRef } from 'react';
+import { ScrollView } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useUnistyles } from 'react-native-unistyles';
 
 import { addDays, daysBetween, fromDateKey, type DateKey } from '@/lib/date';
+import { diamondPath } from '@/lib/glyph';
 
-const DOT = 11;
+const CELL = 10;
 const GAP = 3;
 const DAYS = 364; // ~52 weeks
 
@@ -15,16 +17,42 @@ interface YearHeatmapProps {
   color?: string | null;
 }
 
-/** GitHub-style year grid: columns are weeks (Sun..Sat), newest on the right. */
+/** Year grid of diamonds (weeks × 7), newest on the right. One <Svg> for perf. */
 export function YearHeatmap({ completed, startDate, today, color }: YearHeatmapProps) {
   const { theme } = useUnistyles();
   const scrollRef = useRef<ScrollView>(null);
   const accent = color ?? theme.colors.dotDone;
+  const path = diamondPath(CELL);
 
-  // First cell aligned back to a Sunday.
   let first = addDays(today, -(DAYS - 1));
-  first = addDays(first, -fromDateKey(first).getDay());
+  first = addDays(first, -fromDateKey(first).getDay()); // back to Sunday
   const weeks = Math.floor(daysBetween(first, today) / 7) + 1;
+
+  const width = weeks * (CELL + GAP) - GAP;
+  const height = 7 * (CELL + GAP) - GAP;
+
+  const cells: ReactNode[] = [];
+  for (let w = 0; w < weeks; w++) {
+    for (let d = 0; d < 7; d++) {
+      const key = addDays(first, w * 7 + d);
+      const isFuture = daysBetween(today, key) > 0;
+      const beforeStart = daysBetween(startDate, key) < 0;
+      if (beforeStart) continue;
+      const isDone = completed.has(key);
+      const x = w * (CELL + GAP);
+      const y = d * (CELL + GAP);
+      cells.push(
+        <Path
+          key={`${w}-${d}`}
+          d={path}
+          transform={`translate(${x}, ${y})`}
+          fill={isFuture ? 'none' : isDone ? accent : theme.colors.dotMissed}
+          stroke={isFuture ? theme.colors.dotFutureBorder : undefined}
+          strokeWidth={isFuture ? 1 : 0}
+        />,
+      );
+    }
+  }
 
   return (
     <ScrollView
@@ -32,36 +60,9 @@ export function YearHeatmap({ completed, startDate, today, color }: YearHeatmapP
       horizontal
       showsHorizontalScrollIndicator={false}
       onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}>
-      <View style={{ flexDirection: 'row', gap: GAP }}>
-        {Array.from({ length: weeks }, (_, w) => (
-          <View key={w} style={{ gap: GAP }}>
-            {Array.from({ length: 7 }, (_, d) => {
-              const key = addDays(first, w * 7 + d);
-              const isFuture = daysBetween(today, key) > 0;
-              const beforeStart = daysBetween(startDate, key) < 0;
-              const isDone = completed.has(key);
-              return (
-                <View
-                  key={d}
-                  style={[
-                    { width: DOT, height: DOT, borderRadius: DOT / 2 },
-                    beforeStart && { backgroundColor: 'transparent' },
-                    !beforeStart && isDone && { backgroundColor: accent },
-                    !beforeStart && !isDone && !isFuture && {
-                      backgroundColor: theme.colors.dotMissed,
-                    },
-                    !beforeStart && isFuture && {
-                      backgroundColor: theme.colors.dotFutureBg,
-                      borderWidth: 1,
-                      borderColor: theme.colors.dotFutureBorder,
-                    },
-                  ]}
-                />
-              );
-            })}
-          </View>
-        ))}
-      </View>
+      <Svg width={width} height={height}>
+        {cells}
+      </Svg>
     </ScrollView>
   );
 }

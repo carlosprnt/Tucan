@@ -4,14 +4,19 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { HabitCard } from '@/components/HabitCard';
+import { haptics } from '@/lib/haptics';
 import { listHabits } from '@/store';
 
-function formatToday(): string {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
+function todayParts() {
+  const d = new Date();
+  return {
+    day: d.getDate(),
+    sub: d.toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'long',
+      year: 'numeric',
+    }),
+  };
 }
 
 const Today = observer(function Today() {
@@ -36,10 +41,14 @@ const Today = observer(function Today() {
 export default Today;
 
 function Header() {
+  const { day, sub } = todayParts();
   return (
     <View style={styles.header}>
-      <Text style={styles.title}>Today</Text>
-      <Text style={styles.date}>{formatToday()}</Text>
+      <View style={styles.dateRow}>
+        <Text style={styles.dayNum}>{day}</Text>
+        <View style={styles.accentDot} />
+      </View>
+      <Text style={styles.date}>{sub}</Text>
     </View>
   );
 }
@@ -54,8 +63,11 @@ function EmptyState() {
       </Text>
       <Pressable
         style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
-        onPress={() => router.push('/habit/new')}>
-        <Text style={styles.emptyButtonText}>Create a habit</Text>
+        onPress={() => {
+          haptics.light();
+          router.push('/habit/new');
+        }}>
+        <Text style={styles.emptyButtonText}>Create habit</Text>
       </Pressable>
     </View>
   );
@@ -77,14 +89,28 @@ const styles = StyleSheet.create((theme, rt) => ({
     marginBottom: theme.space.xl,
     gap: theme.space.xs,
   },
-  title: {
-    fontSize: theme.font.display,
-    fontWeight: theme.weight.bold,
-    letterSpacing: -1,
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: theme.space.sm,
+  },
+  dayNum: {
+    fontSize: theme.font.mega,
+    fontWeight: theme.weight.heavy,
+    letterSpacing: -2,
+    lineHeight: theme.font.mega,
     color: theme.colors.textPrimary,
+  },
+  accentDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: theme.space.md,
+    backgroundColor: theme.colors.accent,
   },
   date: {
     fontSize: theme.font.body,
+    fontWeight: theme.weight.medium,
     color: theme.colors.textSecondary,
   },
   separator: {

@@ -5,9 +5,11 @@ import { useState } from 'react';
 import { type LayoutChangeEvent, Pressable, ScrollView, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { DotGrid } from '@/components/DotGrid';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { fromDateKey, todayKey } from '@/lib/date';
 import type { DotState } from '@/lib/grid';
+import { haptics } from '@/lib/haptics';
 import { habitIcon } from '@/lib/icons';
 import { completedDates, getHabit, statsForHabit, toggleCompletion } from '@/store';
 
@@ -41,6 +43,7 @@ const HabitDetail = observer(function HabitDetail() {
   const onEdit = () => router.push({ pathname: '/habit/new', params: { id: habit.id } });
 
   function shiftMonth(delta: number) {
+    haptics.selection();
     setCursor((c) => {
       const d = new Date(c.year, c.month + delta, 1);
       return { year: d.getFullYear(), month: d.getMonth() };
@@ -121,7 +124,7 @@ function Accumulation({
         <Text style={styles.missing}>No completions yet.</Text>
       ) : (
         columns > 0 && (
-          <DotGridTinted states={states} columns={columns} dotSize={dotSize} gap={gap} color={accent} />
+          <DotGrid states={states} columns={columns} cellSize={dotSize} gap={gap} color={accent} />
         )
       )}
       <Text style={styles.accFooter}>
@@ -132,42 +135,15 @@ function Accumulation({
   );
 }
 
-// Accumulation dots use the habit accent; reuse DotGrid for monochrome, overlay tint here.
-function DotGridTinted({
-  states,
-  columns,
-  dotSize,
-  gap,
-  color,
-}: {
-  states: DotState[];
-  columns: number;
-  dotSize: number;
-  gap: number;
-  color: string;
-}) {
-  const width = columns * dotSize + (columns - 1) * gap;
-  return (
-    <View style={[styles.accGrid, { width, gap }]}>
-      {states.map((_, i) => (
-        <View
-          key={i}
-          style={{ width: dotSize, height: dotSize, borderRadius: dotSize / 2, backgroundColor: color }}
-        />
-      ))}
-    </View>
-  );
-}
-
 function Header({ onBack, onEdit }: { onBack: () => void; onEdit?: () => void }) {
   const { theme } = useUnistyles();
   return (
     <View style={styles.headerRow}>
-      <Pressable hitSlop={12} onPress={onBack} style={styles.iconBtn}>
+      <Pressable hitSlop={12} onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.iconBtn}>
         <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
       </Pressable>
       {onEdit && (
-        <Pressable hitSlop={12} onPress={onEdit} style={styles.iconBtn}>
+        <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
           <SymbolView name="slider.horizontal.3" size={20} tintColor={theme.colors.textPrimary} />
         </Pressable>
       )}
@@ -190,7 +166,10 @@ function Segmented({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode)
       {(['month', 'accumulation'] as ViewMode[]).map((m) => (
         <Pressable
           key={m}
-          onPress={() => onChange(m)}
+          onPress={() => {
+            haptics.selection();
+            onChange(m);
+          }}
           style={[styles.segment, mode === m && styles.segmentActive]}>
           <Text style={[styles.segmentText, mode === m && styles.segmentTextActive]}>
             {m === 'month' ? 'Month' : 'Accumulation'}

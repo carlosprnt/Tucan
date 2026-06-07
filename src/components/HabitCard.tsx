@@ -15,11 +15,12 @@ import {
   type Habit,
 } from '@/store';
 
+import { DottedSeparator } from './DottedSeparator';
 import { DotGrid } from './DotGrid';
 import { TodayToggle } from './TodayToggle';
 
-const DOT_SIZE = 9;
-const DOT_GAP = 5;
+const CELL = 11;
+const GAP = 5;
 const GRID_ROWS = 3;
 
 export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }) {
@@ -33,9 +34,7 @@ export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }
   const done = completed.has(today);
 
   const columns =
-    gridWidth > 0
-      ? Math.max(1, Math.floor((gridWidth + DOT_GAP) / (DOT_SIZE + DOT_GAP)))
-      : 0;
+    gridWidth > 0 ? Math.max(1, Math.floor((gridWidth + GAP) / (CELL + GAP))) : 0;
   const states =
     columns > 0
       ? buildRecentStates({
@@ -46,12 +45,11 @@ export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }
         })
       : [];
 
-  const onGridLayout = (e: LayoutChangeEvent) =>
-    setGridWidth(e.nativeEvent.layout.width);
-
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${habit.name}, ${total} days completed`}
       onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}>
       <View style={styles.top}>
         <View style={styles.iconWrap}>
@@ -66,7 +64,10 @@ export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }
           <Text style={styles.name} numberOfLines={1}>
             {habit.name}
           </Text>
-          <Text style={styles.total}>{total}</Text>
+          <View style={styles.totalRow}>
+            <Text style={styles.total}>{total}</Text>
+            <Text style={styles.totalLabel}>days</Text>
+          </View>
         </View>
 
         <TodayToggle
@@ -76,9 +77,17 @@ export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }
         />
       </View>
 
-      <View style={styles.gridWrap} onLayout={onGridLayout}>
+      <DottedSeparator />
+
+      <View style={styles.gridWrap} onLayout={(e: LayoutChangeEvent) => setGridWidth(e.nativeEvent.layout.width)}>
         {columns > 0 && (
-          <DotGrid states={states} columns={columns} dotSize={DOT_SIZE} gap={DOT_GAP} />
+          <DotGrid
+            states={states}
+            columns={columns}
+            cellSize={CELL}
+            gap={GAP}
+            color={habit.color}
+          />
         )}
       </View>
     </Pressable>
@@ -88,12 +97,12 @@ export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }
 const styles = StyleSheet.create((theme) => ({
   card: {
     backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.lg,
-    padding: theme.space.lg,
+    borderRadius: theme.radius.xl,
+    padding: theme.space.xl,
     gap: theme.space.lg,
   },
   pressed: {
-    opacity: 0.9,
+    opacity: 0.92,
   },
   top: {
     flexDirection: 'row',
@@ -101,8 +110,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.md,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -117,10 +126,20 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: theme.weight.semibold,
     color: theme.colors.textPrimary,
   },
+  totalRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: theme.space.xs,
+  },
   total: {
+    fontSize: theme.font.title,
+    fontWeight: theme.weight.heavy,
+    letterSpacing: -0.5,
+    color: theme.colors.textPrimary,
+  },
+  totalLabel: {
     fontSize: theme.font.caption,
-    fontWeight: theme.weight.medium,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textMuted,
   },
   gridWrap: {
     width: '100%',

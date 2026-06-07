@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { YearHeatmap } from '@/components/YearHeatmap';
+import { haptics } from '@/lib/haptics';
 import { todayKey } from '@/lib/date';
 import { habitIcon } from '@/lib/icons';
 import { completedDates, listHabits, statsForHabit, totalForHabit } from '@/store';
@@ -30,7 +31,14 @@ const Global = observer(function Global() {
       showsVerticalScrollIndicator={false}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Global</Text>
-        <Pressable hitSlop={12} onPress={() => router.push('/settings')}>
+        <Pressable
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          onPress={() => {
+            haptics.light();
+            router.push('/settings');
+          }}>
           <SymbolView name="gearshape" size={24} tintColor={theme.colors.textPrimary} />
         </Pressable>
       </View>

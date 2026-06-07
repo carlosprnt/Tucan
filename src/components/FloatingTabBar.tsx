@@ -3,6 +3,8 @@ import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Pressable, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { haptics } from '@/lib/haptics';
+
 // Minimal shape of the props expo-router's <Tabs tabBar={...}> passes through.
 type TabBarProps = {
   state: { index: number; routes: { key: string; name: string }[] };
@@ -27,13 +29,22 @@ export function FloatingTabBar({ state, navigation }: TabBarProps) {
       <View style={styles.bar}>
         <TabButton
           symbol={TAB_ICONS.index}
+          label="Today"
           active={activeName === 'index'}
-          onPress={() => navigation.navigate('index')}
+          onPress={() => {
+            haptics.selection();
+            navigation.navigate('index');
+          }}
         />
 
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Create habit"
           style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
-          onPress={() => router.push('/habit/new')}>
+          onPress={() => {
+            haptics.light();
+            router.push('/habit/new');
+          }}>
           <SymbolView
             name="plus"
             size={26}
@@ -44,8 +55,12 @@ export function FloatingTabBar({ state, navigation }: TabBarProps) {
 
         <TabButton
           symbol={TAB_ICONS.global}
+          label="Global"
           active={activeName === 'global'}
-          onPress={() => navigation.navigate('global')}
+          onPress={() => {
+            haptics.selection();
+            navigation.navigate('global');
+          }}
         />
       </View>
     </View>
@@ -54,10 +69,12 @@ export function FloatingTabBar({ state, navigation }: TabBarProps) {
 
 function TabButton({
   symbol,
+  label,
   active,
   onPress,
 }: {
   symbol: SFSymbol;
+  label: string;
   active: boolean;
   onPress: () => void;
 }) {
@@ -66,6 +83,9 @@ function TabButton({
     <Pressable
       hitSlop={8}
       onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       style={({ pressed }) => [styles.tab, pressed && styles.pressed]}>
       <SymbolView
         name={symbol}
