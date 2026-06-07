@@ -2,11 +2,16 @@
 import './sync';
 
 import { syncState } from '@legendapp/state';
+import type { Session } from '@supabase/supabase-js';
 
-import { endSession, initAuth } from './auth';
-import { completions$ } from './completions$';
-import { habits$ } from './habits$';
-import { profiles$ } from './profile$';
+import { addDays, todayKey } from '@/lib/date';
+import { uuidv4 } from '@/lib/id';
+import { PREVIEW, PREVIEW_USER_ID } from '@/lib/preview';
+
+import { auth$, endSession, initAuth } from './auth';
+import { completions$, type Completion } from './completions$';
+import { habits$, type Habit } from './habits$';
+import { profiles$, type Profile } from './profile$';
 
 export * from './auth';
 export * from './habits$';
@@ -15,11 +20,16 @@ export * from './profile$';
 
 /** Start the store: wire auth so sync can begin once a session exists. */
 export function initStore(): void {
+  if (PREVIEW) {
+    seedPreview();
+    return;
+  }
   initAuth();
 }
 
 /** True once the local (MMKV) caches have hydrated — gate empty states on this. */
 export function isStoreHydrated(): boolean {
+  if (PREVIEW) return true;
   return (
     syncState(habits$).isPersistLoaded.get() &&
     syncState(completions$).isPersistLoaded.get()
@@ -28,6 +38,7 @@ export function isStoreHydrated(): boolean {
 
 /** Surfaces the first sync error across the core collections, if any. */
 export function storeSyncError(): Error | undefined {
+  if (PREVIEW) return undefined;
   return (
     syncState(habits$).error.get() ?? syncState(completions$).error.get() ?? undefined
   );
@@ -38,10 +49,94 @@ export function storeSyncError(): Error | undefined {
  * account's habits/completions (RLS protects the server; this protects the device).
  */
 export async function signOut(): Promise<void> {
+  if (PREVIEW) return; // no real session in preview
   await endSession();
   await Promise.all([
     syncState(habits$).reset(),
     syncState(completions$).reset(),
     syncState(profiles$).reset(),
   ]);
+}
+
+// ---------------------------------------------------------------------------
+// Preview seed (dev only)
+// ---------------------------------------------------------------------------
+
+function seedPreview(): void {
+  // Fake an authenticated session so the gate passes and user-id helpers work.
+  auth$.session.set({
+    user: { id: PREVIEW_USER_ID, email: 'preview@tucan.app' },
+  } as unknown as Session);
+  auth$.initializing.set(false);
+
+  if (Object.keys(habits$.peek()).length > 0) return; // already seeded
+
+  const now = new Date().toISOString();
+  const today = todayKey();
+
+  const defs: {
+    name: string;
+    icon: string;
+    color: string | null;
+    days: number; // history length
+    p: number; // completion probability
+  }[] = [
+    { name: 'Drink water', icon: 'drop.fill', color: null, days: 64, p: 0.86 },
+    { name: 'Exercise', icon: 'figure.run', color: '#E5484D', days: 96, p: 0.5 },
+    { name: 'Read', icon: 'book.fill', color: null, days: 130, p: 0.72 },
+    { name: 'Meditate', icon: 'brain.head.profile', color: '#6E56CF', days: 220, p: 0.6 },
+    { name: 'Sleep early', icon: 'moon.fill', color: null, days: 28, p: 0.45 },
+  ];
+
+  defs.forEach((d, idx) => {
+    const id = uuidv4();
+    const startDate = addDays(today, -d.days);
+    const habit: Habit = {
+      id,
+      user_id: PREVIEW_USER_ID,
+      name: d.name,
+      description: null,
+      icon: d.icon,
+      color: d.color,
+      start_date: startDate,
+      sort_order: idx,
+      archived_at: null,
+      created_at: now,
+      updated_at: now,
+      deleted: false,
+    };
+    habits$[id].set(habit);
+
+    for (let offset = d.days; offset >= 0; offset--) {
+      // skip today for a couple of habits so "mark today" has something to do
+      if (offset === 0 && idx % 2 === 1) continue;
+      if (Math.random() < d.p) {
+        const cid = uuidv4();
+        const date = addDays(today, -offset);
+        const completion: Completion = {
+          id: cid,
+          habit_id: id,
+          user_id: PREVIEW_USER_ID,
+          date,
+          created_at: now,
+          updated_at: now,
+          deleted: false,
+        };
+        completions$[cid].set(completion);
+      }
+    }
+  });
+
+  const profile: Profile = {
+    id: PREVIEW_USER_ID,
+    display_name: 'Preview',
+    theme_pref: 'auto',
+    reminder_enabled: false,
+    reminder_time: null,
+    is_premium: true, // unlock colors so the full design is visible
+    created_at: now,
+    updated_at: now,
+    deleted: false,
+  };
+  profiles$[PREVIEW_USER_ID].set(profile);
 }

@@ -1,5 +1,6 @@
 import { observable, type Observable } from '@legendapp/state';
 
+import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
 
 import { getUserId } from './auth';
@@ -9,13 +10,15 @@ export type Profile = Tables<'profiles'>;
 export type ThemePref = 'light' | 'dark' | 'auto';
 
 /** Profiles keyed by id; in practice only the current user's row is present. */
-export const profiles$ = observable(
-  customSynced({
-    collection: 'profiles',
-    realtime: true,
-    persist: { name: 'profiles', retrySync: true },
-    retry: { infinite: true },
-  }),
+export const profiles$ = observable<Record<string, Profile>>(
+  PREVIEW
+    ? {}
+    : (customSynced({
+        collection: 'profiles',
+        realtime: true,
+        persist: { name: 'profiles', retrySync: true },
+        retry: { infinite: true },
+      }) as unknown as Record<string, Profile>),
 );
 
 export function currentProfile(): Profile | undefined {

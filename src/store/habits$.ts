@@ -2,6 +2,7 @@ import { observable, type Observable } from '@legendapp/state';
 
 import { todayKey } from '@/lib/date';
 import { uuidv4 } from '@/lib/id';
+import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
 
 import { getUserId } from './auth';
@@ -10,13 +11,15 @@ import { customSynced } from './sync';
 export type Habit = Tables<'habits'>;
 
 /** All habit rows for the signed-in user, keyed by id (RLS scopes the read). */
-export const habits$ = observable(
-  customSynced({
-    collection: 'habits',
-    realtime: true,
-    persist: { name: 'habits', retrySync: true },
-    retry: { infinite: true },
-  }),
+export const habits$ = observable<Record<string, Habit>>(
+  PREVIEW
+    ? {}
+    : (customSynced({
+        collection: 'habits',
+        realtime: true,
+        persist: { name: 'habits', retrySync: true },
+        retry: { infinite: true },
+      }) as unknown as Record<string, Habit>),
 );
 
 /** Visible habits: not deleted, not archived, ordered by sort_order. */

@@ -2,6 +2,7 @@ import { observable } from '@legendapp/state';
 
 import { elapsedDaysInclusive, type DateKey } from '@/lib/date';
 import { uuidv4 } from '@/lib/id';
+import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
 
 import { getUserId } from './auth';
@@ -13,13 +14,15 @@ export type Completion = Tables<'completions'>;
  * All completion rows for the signed-in user, keyed by id.
  * A completion counts as "done" when a row exists and `deleted` is false.
  */
-export const completions$ = observable(
-  customSynced({
-    collection: 'completions',
-    realtime: true,
-    persist: { name: 'completions', retrySync: true },
-    retry: { infinite: true },
-  }),
+export const completions$ = observable<Record<string, Completion>>(
+  PREVIEW
+    ? {}
+    : (customSynced({
+        collection: 'completions',
+        realtime: true,
+        persist: { name: 'completions', retrySync: true },
+        retry: { infinite: true },
+      }) as unknown as Record<string, Completion>),
 );
 
 function findCompletion(habitId: string, date: DateKey): Completion | undefined {
