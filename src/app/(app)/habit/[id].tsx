@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { type LayoutChangeEvent, Pressable, ScrollView, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { DetailActionBar, type DetailViewMode } from '@/components/DetailActionBar';
 import { DotGrid } from '@/components/DotGrid';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { fromDateKey, todayKey } from '@/lib/date';
@@ -15,15 +16,13 @@ import { haptics } from '@/lib/haptics';
 import { habitIcon } from '@/lib/icons';
 import { completedDates, getHabit, statsForHabit, toggleCompletion } from '@/store';
 
-type ViewMode = 'month' | 'accumulation';
-
 const HabitDetail = observer(function HabitDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { theme } = useUnistyles();
 
   const now = new Date();
-  const [mode, setMode] = useState<ViewMode>('month');
+  const [mode, setMode] = useState<DetailViewMode>('month');
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
   const habit = id ? getHabit(id) : undefined;
@@ -46,6 +45,7 @@ const HabitDetail = observer(function HabitDetail() {
 
   const today = todayKey();
   const completed = completedDates(habit.id);
+  const doneToday = completed.has(today);
   const stats = statsForHabit(habit.id, habit.start_date);
   const accent = habit.color ?? theme.colors.ink;
 
@@ -60,52 +60,60 @@ const HabitDetail = observer(function HabitDetail() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}>
-      <Header onBack={() => router.back()} onEdit={onEdit} />
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
+        <Header onBack={() => router.back()} onEdit={onEdit} />
 
-      <View style={styles.heading}>
-        <View style={styles.iconWrap}>
-          <SymbolView name={habitIcon(habit.icon)} size={28} tintColor={accent} />
-        </View>
-        <Text style={styles.name}>{habit.name}</Text>
-      </View>
-
-      <View style={styles.stats}>
-        <Stat value={String(stats.total)} label="completed" />
-        <Stat value={`${stats.percent}%`} label="since start" />
-      </View>
-
-      <Segmented mode={mode} onChange={setMode} />
-
-      {mode === 'month' ? (
-        <View style={styles.section}>
-          <View style={styles.monthNav}>
-            <Pressable hitSlop={10} onPress={() => shiftMonth(-1)} accessibilityRole="button" accessibilityLabel="Previous month" style={styles.navBtn}>
-              <SymbolView name="chevron.left" size={18} tintColor={theme.colors.textSecondary} />
-            </Pressable>
-            <Text style={styles.monthLabel}>{monthLabel(cursor.year, cursor.month)}</Text>
-            <Pressable hitSlop={10} onPress={() => shiftMonth(1)} accessibilityRole="button" accessibilityLabel="Next month" style={styles.navBtn}>
-              <SymbolView name="chevron.right" size={18} tintColor={theme.colors.textSecondary} />
-            </Pressable>
+        <View style={styles.heading}>
+          <View style={styles.iconWrap}>
+            <SymbolView name={habitIcon(habit.icon)} size={28} tintColor={accent} />
           </View>
-          <MonthCalendar
-            year={cursor.year}
-            month={cursor.month}
-            completed={completed}
-            startDate={habit.start_date}
-            today={today}
-            color={habit.color}
-            onToggleDay={(key) => toggleCompletion(habit.id, key)}
-          />
-          <Text style={styles.hint}>Tap any past day to fill it in.</Text>
+          <Text style={styles.name}>{habit.name}</Text>
         </View>
-      ) : (
-        <Accumulation total={stats.total} percent={stats.percent} accent={accent} />
-      )}
-    </ScrollView>
+
+        <View style={styles.stats}>
+          <Stat value={String(stats.total)} label="completed" />
+          <Stat value={`${stats.percent}%`} label="since start" />
+        </View>
+
+        {mode === 'month' ? (
+          <View style={styles.section}>
+            <View style={styles.monthNav}>
+              <Pressable hitSlop={10} onPress={() => shiftMonth(-1)} accessibilityRole="button" accessibilityLabel="Previous month" style={styles.navBtn}>
+                <SymbolView name="chevron.left" size={18} tintColor={theme.colors.textSecondary} />
+              </Pressable>
+              <Text style={styles.monthLabel}>{monthLabel(cursor.year, cursor.month)}</Text>
+              <Pressable hitSlop={10} onPress={() => shiftMonth(1)} accessibilityRole="button" accessibilityLabel="Next month" style={styles.navBtn}>
+                <SymbolView name="chevron.right" size={18} tintColor={theme.colors.textSecondary} />
+              </Pressable>
+            </View>
+            <MonthCalendar
+              year={cursor.year}
+              month={cursor.month}
+              completed={completed}
+              startDate={habit.start_date}
+              today={today}
+              color={habit.color}
+              onToggleDay={(key) => toggleCompletion(habit.id, key)}
+            />
+            <Text style={styles.hint}>Tap any past day to fill it in.</Text>
+          </View>
+        ) : (
+          <Accumulation total={stats.total} percent={stats.percent} accent={accent} />
+        )}
+      </ScrollView>
+
+      <DetailActionBar
+        done={doneToday}
+        onToggleToday={() => toggleCompletion(habit.id, today)}
+        mode={mode}
+        onToggleMode={() => setMode((m) => (m === 'month' ? 'accumulation' : 'month'))}
+        color={habit.color}
+      />
+    </View>
   );
 });
 
@@ -166,29 +174,6 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function Segmented({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
-  return (
-    <View style={styles.segmented}>
-      {(['month', 'accumulation'] as ViewMode[]).map((m) => (
-        <Pressable
-          key={m}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: mode === m }}
-          accessibilityLabel={m === 'month' ? 'Month' : 'All time'}
-          onPress={() => {
-            haptics.selection();
-            onChange(m);
-          }}
-          style={[styles.segment, mode === m && styles.segmentActive]}>
-          <Text style={[styles.segmentText, mode === m && styles.segmentTextActive]}>
-            {m === 'month' ? 'Month' : 'All time'}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
 function monthLabel(year: number, month: number): string {
   return fromDateKey(`${year}-${String(month + 1).padStart(2, '0')}-01`).toLocaleDateString(
     undefined,
@@ -197,14 +182,17 @@ function monthLabel(year: number, month: number): string {
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
+  },
+  container: {
+    flex: 1,
   },
   content: {
     paddingHorizontal: theme.space.lg,
     paddingTop: rt.insets.top + theme.space.sm,
-    paddingBottom: rt.insets.bottom + theme.space.xxxl,
+    paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
   },
   headerRow: {
@@ -251,30 +239,6 @@ const styles = StyleSheet.create((theme, rt) => ({
   statLabel: {
     fontSize: theme.font.caption,
     color: theme.colors.textSecondary,
-  },
-  segmented: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    padding: 4,
-    gap: 4,
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: theme.space.sm,
-    borderRadius: theme.radius.sm,
-    alignItems: 'center',
-  },
-  segmentActive: {
-    backgroundColor: theme.colors.canvas,
-  },
-  segmentText: {
-    fontSize: theme.font.body,
-    color: theme.colors.textSecondary,
-  },
-  segmentTextActive: {
-    color: theme.colors.textPrimary,
-    fontWeight: theme.weight.semibold,
   },
   section: {
     gap: theme.space.lg,
