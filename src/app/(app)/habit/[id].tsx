@@ -4,15 +4,15 @@ import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { type LayoutChangeEvent, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { DotGrid } from '@/components/DotGrid';
+import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
+import { cascadeIn } from '@/lib/anim';
 import { fromDateKey, todayKey } from '@/lib/date';
-import type { DotState } from '@/lib/grid';
 import { haptics } from '@/lib/haptics';
-import { habitIcon } from '@/lib/icons';
 import {
   completedDates,
   detailUI$,
@@ -27,11 +27,9 @@ const HabitDetail = observer(function HabitDetail() {
   const { theme } = useUnistyles();
 
   const now = new Date();
-  // The view mode lives in shared UI state so the global app bar can toggle it.
   const mode = use$(detailUI$.mode);
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
-  // Tell the app bar which habit is open (and reset to Month on entry).
   useEffect(() => {
     detailUI$.habitId.set(id ?? null);
     detailUI$.mode.set('month');
@@ -44,8 +42,8 @@ const HabitDetail = observer(function HabitDetail() {
 
   if (!habit) {
     return (
-      <View style={styles.container}>
-        <Header onBack={() => router.back()} />
+      <View style={styles.screen}>
+        <Header title="" onBack={() => router.back()} />
         <View style={styles.notFound}>
           <Text style={styles.missing}>This habit no longer exists.</Text>
           <Pressable
@@ -63,8 +61,6 @@ const HabitDetail = observer(function HabitDetail() {
   const stats = statsForHabit(habit.id, habit.start_date);
   const accent = habit.color ?? theme.colors.ink;
 
-  const onEdit = () => router.push({ pathname: '/habit/new', params: { id: habit.id } });
-
   function shiftMonth(delta: number) {
     haptics.selection();
     setCursor((c) => {
@@ -79,14 +75,11 @@ const HabitDetail = observer(function HabitDetail() {
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        <Header onBack={() => router.back()} onEdit={onEdit} />
-
-        <View style={styles.heading}>
-          <View style={styles.iconWrap}>
-            <SymbolView name={habitIcon(habit.icon)} size={28} tintColor={accent} />
-          </View>
-          <Text style={styles.name}>{habit.name}</Text>
-        </View>
+        <Header
+          title={habit.name}
+          onBack={() => router.back()}
+          onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
+        />
 
         <View style={styles.stats}>
           <Stat value={String(stats.total)} label="completed" />
@@ -125,6 +118,9 @@ const HabitDetail = observer(function HabitDetail() {
 
 export default HabitDetail;
 
+const CELL = 12;
+const GAP = 6;
+
 function Accumulation({
   total,
   percent,
@@ -134,38 +130,48 @@ function Accumulation({
   percent: number;
   accent: string;
 }) {
-  const [width, setWidth] = useState(0);
-  const dotSize = 12;
-  const gap = 6;
-  const columns =
-    width > 0 ? Math.max(1, Math.floor((width + gap) / (dotSize + gap))) : 0;
-  const states: DotState[] = Array.from({ length: total }, () => 'done');
-
   return (
-    <View style={styles.section} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
+    <View style={styles.section}>
       {total === 0 ? (
         <Text style={styles.missing}>No dots yet — mark today done to start.</Text>
       ) : (
-        columns > 0 && (
-          <DotGrid states={states} columns={columns} cellSize={dotSize} gap={gap} color={accent} />
-        )
+        <View style={[styles.accGrid, { gap: GAP }]}>
+          {Array.from({ length: total }, (_, i) => (
+            <Animated.View key={i} entering={cascadeIn(i)} style={{ width: CELL, height: CELL }}>
+              <Glyph size={CELL} state="done" color={accent} />
+            </Animated.View>
+          ))}
+        </View>
       )}
       <Text style={styles.accFooter}>{percent}% of days since you started</Text>
     </View>
   );
 }
 
-function Header({ onBack, onEdit }: { onBack: () => void; onEdit?: () => void }) {
+function Header({
+  title,
+  onBack,
+  onEdit,
+}: {
+  title: string;
+  onBack: () => void;
+  onEdit?: () => void;
+}) {
   const { theme } = useUnistyles();
   return (
     <View style={styles.headerRow}>
       <Pressable hitSlop={12} onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.iconBtn}>
         <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
       </Pressable>
-      {onEdit && (
+      <Text style={styles.headerTitle} numberOfLines={1}>
+        {title}
+      </Text>
+      {onEdit ? (
         <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
           <SymbolView name="pencil" size={20} tintColor={theme.colors.textPrimary} />
         </Pressable>
+      ) : (
+        <View style={styles.iconBtn} />
       )}
     </View>
   );
@@ -205,30 +211,20 @@ const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: theme.space.sm,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: theme.font.heading,
+    fontWeight: theme.weight.bold,
+    color: theme.colors.textPrimary,
   },
   iconBtn: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-  },
-  heading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.space.md,
-  },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.card,
-  },
-  name: {
-    flex: 1,
-    fontSize: theme.font.title,
-    fontWeight: theme.weight.bold,
-    color: theme.colors.textPrimary,
   },
   stats: {
     flexDirection: 'row',
@@ -265,6 +261,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontWeight: theme.weight.semibold,
     color: theme.colors.textPrimary,
   },
+  accGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   accFooter: {
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
@@ -280,6 +280,8 @@ const styles = StyleSheet.create((theme, rt) => ({
   notFound: {
     gap: theme.space.lg,
     alignItems: 'flex-start',
+    paddingHorizontal: theme.space.lg,
+    paddingTop: theme.space.xl,
   },
   notFoundBtn: {
     height: 48,
