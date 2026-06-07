@@ -1,20 +1,25 @@
 import '@/theme/unistyles';
 
-import { observer } from '@legendapp/state/react';
+import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, ScrollView, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { DetailActionBar, type DetailViewMode } from '@/components/DetailActionBar';
 import { DotGrid } from '@/components/DotGrid';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { fromDateKey, todayKey } from '@/lib/date';
 import type { DotState } from '@/lib/grid';
 import { haptics } from '@/lib/haptics';
 import { habitIcon } from '@/lib/icons';
-import { completedDates, getHabit, statsForHabit, toggleCompletion } from '@/store';
+import {
+  completedDates,
+  detailUI$,
+  getHabit,
+  statsForHabit,
+  toggleCompletion,
+} from '@/store';
 
 const HabitDetail = observer(function HabitDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,8 +27,18 @@ const HabitDetail = observer(function HabitDetail() {
   const { theme } = useUnistyles();
 
   const now = new Date();
-  const [mode, setMode] = useState<DetailViewMode>('month');
+  // The view mode lives in shared UI state so the global app bar can toggle it.
+  const mode = use$(detailUI$.mode);
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() });
+
+  // Tell the app bar which habit is open (and reset to Month on entry).
+  useEffect(() => {
+    detailUI$.habitId.set(id ?? null);
+    detailUI$.mode.set('month');
+    return () => {
+      detailUI$.habitId.set(null);
+    };
+  }, [id]);
 
   const habit = id ? getHabit(id) : undefined;
 
@@ -45,7 +60,6 @@ const HabitDetail = observer(function HabitDetail() {
 
   const today = todayKey();
   const completed = completedDates(habit.id);
-  const doneToday = completed.has(today);
   const stats = statsForHabit(habit.id, habit.start_date);
   const accent = habit.color ?? theme.colors.ink;
 
@@ -105,14 +119,6 @@ const HabitDetail = observer(function HabitDetail() {
           <Accumulation total={stats.total} percent={stats.percent} accent={accent} />
         )}
       </ScrollView>
-
-      <DetailActionBar
-        done={doneToday}
-        onToggleToday={() => toggleCompletion(habit.id, today)}
-        mode={mode}
-        onToggleMode={() => setMode((m) => (m === 'month' ? 'accumulation' : 'month'))}
-        color={habit.color}
-      />
     </View>
   );
 });

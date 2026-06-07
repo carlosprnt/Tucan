@@ -17,6 +17,7 @@ export * from './auth';
 export * from './habits$';
 export * from './completions$';
 export * from './profile$';
+export * from './ui';
 
 /** Start the store: wire auth so sync can begin once a session exists. */
 export function initStore(): void {
