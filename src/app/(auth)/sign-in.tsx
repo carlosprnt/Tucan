@@ -7,12 +7,16 @@ import { isAppleAuthAvailable, signInWithApple, signInWithGoogle } from '@/lib/o
 
 type Provider = 'google' | 'apple';
 
+// Apple sign-in is gated until its Supabase provider is configured.
+const APPLE_ENABLED = process.env.EXPO_PUBLIC_ENABLE_APPLE_AUTH === 'true';
+
 export default function SignIn() {
   const { theme, rt } = useUnistyles();
   const [appleAvailable, setAppleAvailable] = useState(false);
   const [busy, setBusy] = useState<Provider | null>(null);
 
   useEffect(() => {
+    if (!APPLE_ENABLED) return;
     isAppleAuthAvailable().then(setAppleAvailable);
   }, []);
 
