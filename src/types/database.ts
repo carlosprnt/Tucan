@@ -1,104 +1,273 @@
-/**
- * Supabase database types.
- *
- * NOTE: hand-authored to match supabase/migrations/0001_init.sql. Once the
- * Tucan Supabase project exists, regenerate this file from the live schema:
- *   supabase gen types typescript --project-id <ref> > src/types/database.ts
- * (or via the Supabase MCP `generate_typescript_types`).
- */
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-type Timestamptz = string;
-type DateString = string; // YYYY-MM-DD (local day)
-
-export type ThemePref = 'light' | 'dark' | 'auto';
-
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          id: string;
-          display_name: string | null;
-          theme_pref: ThemePref;
-          reminder_enabled: boolean;
-          reminder_time: string | null;
-          is_premium: boolean;
-          created_at: Timestamptz;
-          updated_at: Timestamptz;
-          deleted: boolean;
-        };
-        Insert: {
-          id: string;
-          display_name?: string | null;
-          theme_pref?: ThemePref;
-          reminder_enabled?: boolean;
-          reminder_time?: string | null;
-          is_premium?: boolean;
-          created_at?: Timestamptz;
-          updated_at?: Timestamptz;
-          deleted?: boolean;
-        };
-        Update: Partial<Database['public']['Tables']['profiles']['Insert']>;
-        Relationships: [];
-      };
-      habits: {
-        Row: {
-          id: string;
-          user_id: string;
-          name: string;
-          description: string | null;
-          icon: string | null;
-          color: string | null;
-          start_date: DateString;
-          sort_order: number;
-          archived_at: Timestamptz | null;
-          created_at: Timestamptz;
-          updated_at: Timestamptz;
-          deleted: boolean;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          name: string;
-          description?: string | null;
-          icon?: string | null;
-          color?: string | null;
-          start_date: DateString;
-          sort_order?: number;
-          archived_at?: Timestamptz | null;
-          created_at?: Timestamptz;
-          updated_at?: Timestamptz;
-          deleted?: boolean;
-        };
-        Update: Partial<Database['public']['Tables']['habits']['Insert']>;
-        Relationships: [];
-      };
       completions: {
         Row: {
-          id: string;
-          habit_id: string;
-          user_id: string;
-          date: DateString;
-          created_at: Timestamptz;
-          updated_at: Timestamptz;
-          deleted: boolean;
-        };
+          created_at: string
+          date: string
+          deleted: boolean
+          habit_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          habit_id: string;
-          user_id: string;
-          date: DateString;
-          created_at?: Timestamptz;
-          updated_at?: Timestamptz;
-          deleted?: boolean;
-        };
-        Update: Partial<Database['public']['Tables']['completions']['Insert']>;
-        Relationships: [];
-      };
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
+          created_at?: string
+          date: string
+          deleted?: boolean
+          habit_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          deleted?: boolean
+          habit_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          deleted: boolean
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          sort_order: number
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          deleted?: boolean
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          deleted?: boolean
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          deleted: boolean
+          display_name: string | null
+          id: string
+          is_premium: boolean
+          reminder_enabled: boolean
+          reminder_time: string | null
+          theme_pref: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted?: boolean
+          display_name?: string | null
+          id: string
+          is_premium?: boolean
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          theme_pref?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted?: boolean
+          display_name?: string | null
+          id?: string
+          is_premium?: boolean
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          theme_pref?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
