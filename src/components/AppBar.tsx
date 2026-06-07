@@ -196,9 +196,8 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
   },
   bar: {
-    height: 64,
-    justifyContent: 'center',
-    paddingHorizontal: theme.space.xl,
+    // Equal margin on all sides (icon-to-edge matches top/bottom).
+    padding: theme.space.sm,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.card,
     borderWidth: 1,
@@ -221,7 +220,6 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.space.xl,
-    paddingHorizontal: theme.space.xl,
   },
   item: {
     width: 44,
