@@ -1,4 +1,4 @@
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useUnistyles } from 'react-native-unistyles';
 
 import { diamondPath } from '@/lib/glyph';
@@ -33,22 +33,19 @@ export function DotGrid({ states, columns, cellSize = 12, gap = 6, color }: DotG
         const row = Math.floor(i / columns);
         const x = col * (cellSize + gap);
         const y = row * (cellSize + gap);
-        const fill =
-          state === 'done'
-            ? (color ?? theme.colors.dotDone)
-            : state === 'missed'
-              ? theme.colors.dotMissed
-              : 'none';
-        return (
-          <Path
-            key={i}
-            d={path}
-            transform={`translate(${x}, ${y})`}
-            fill={fill}
-            stroke={state === 'future' ? theme.colors.dotFutureBorder : undefined}
-            strokeWidth={state === 'future' ? 1 : 0}
-          />
-        );
+        if (state === 'future') {
+          return (
+            <Circle
+              key={i}
+              cx={x + cellSize / 2}
+              cy={y + cellSize / 2}
+              r={Math.max(1.5, cellSize * 0.13)}
+              fill={theme.colors.dotFutureBorder}
+            />
+          );
+        }
+        const fill = state === 'done' ? (color ?? theme.colors.dotDone) : theme.colors.dotMissed;
+        return <Path key={i} d={path} transform={`translate(${x}, ${y})`} fill={fill} />;
       })}
     </Svg>
   );

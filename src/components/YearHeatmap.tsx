@@ -1,6 +1,6 @@
 import { type ReactNode, useRef } from 'react';
 import { ScrollView } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useUnistyles } from 'react-native-unistyles';
 
 import { addDays, daysBetween, fromDateKey, type DateKey } from '@/lib/date';
@@ -41,14 +41,24 @@ export function YearHeatmap({ completed, startDate, today, color }: YearHeatmapP
       const isDone = completed.has(key);
       const x = w * (CELL + GAP);
       const y = d * (CELL + GAP);
+      if (isFuture) {
+        cells.push(
+          <Circle
+            key={`${w}-${d}`}
+            cx={x + CELL / 2}
+            cy={y + CELL / 2}
+            r={Math.max(1.5, CELL * 0.13)}
+            fill={theme.colors.dotFutureBorder}
+          />,
+        );
+        continue;
+      }
       cells.push(
         <Path
           key={`${w}-${d}`}
           d={path}
           transform={`translate(${x}, ${y})`}
-          fill={isFuture ? 'none' : isDone ? accent : theme.colors.dotMissed}
-          stroke={isFuture ? theme.colors.dotFutureBorder : undefined}
-          strokeWidth={isFuture ? 1 : 0}
+          fill={isDone ? accent : theme.colors.dotMissed}
         />,
       );
     }

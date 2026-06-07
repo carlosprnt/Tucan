@@ -211,7 +211,9 @@ const styles = StyleSheet.create((theme) => ({
   sizer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: theme.space.xl,
+    height: 52,
     opacity: 0,
   },
   layer: {

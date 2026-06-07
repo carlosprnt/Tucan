@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useUnistyles } from 'react-native-unistyles';
 
 import { diamondPath } from '@/lib/glyph';
@@ -12,27 +12,30 @@ interface GlyphProps {
   color?: string | null;
 }
 
-/** A single diamond glyph (used for tappable cells like the month calendar). */
+/** A single grid cell. Done/missed are diamonds; future is a small dot. */
 export function Glyph({ size, state, color }: GlyphProps) {
   const { theme } = useUnistyles();
 
   if (state === 'empty') return <View style={{ width: size, height: size }} />;
 
-  const fill =
-    state === 'done'
-      ? (color ?? theme.colors.dotDone)
-      : state === 'missed'
-        ? theme.colors.dotMissed
-        : 'none';
+  if (state === 'future') {
+    return (
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={Math.max(1.5, size * 0.13)}
+          fill={theme.colors.dotFutureBorder}
+        />
+      </Svg>
+    );
+  }
+
+  const fill = state === 'done' ? (color ?? theme.colors.dotDone) : theme.colors.dotMissed;
 
   return (
     <Svg width={size} height={size}>
-      <Path
-        d={diamondPath(size)}
-        fill={fill}
-        stroke={state === 'future' ? theme.colors.dotFutureBorder : undefined}
-        strokeWidth={state === 'future' ? 1 : 0}
-      />
+      <Path d={diamondPath(size)} fill={fill} />
     </Svg>
   );
 }

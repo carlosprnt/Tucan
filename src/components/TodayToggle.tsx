@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect } from 'react';
-import { Pressable } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Pressable, View } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -12,6 +12,7 @@ import Animated, {
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { haptics } from '@/lib/haptics';
+import { SparkleBurst, type SparkleBurstHandle } from './SparkleBurst';
 
 /*
  * Reanimated shared-value writes (`sv.value = ...`) are the library's official
@@ -36,6 +37,7 @@ export function TodayToggle({ done, onPress, color }: TodayToggleProps) {
 
   const progress = useSharedValue(done ? 1 : 0);
   const scale = useSharedValue(1);
+  const sparkleRef = useRef<SparkleBurstHandle>(null);
 
   useEffect(() => {
     progress.value = withSpring(done ? 1 : 0, { damping: 15, stiffness: 220 });
@@ -53,8 +55,12 @@ export function TodayToggle({ done, onPress, color }: TodayToggleProps) {
   }));
 
   function handlePress() {
-    if (done) haptics.light();
-    else haptics.medium();
+    if (done) {
+      haptics.light();
+    } else {
+      haptics.medium();
+      sparkleRef.current?.play(); // celebrate only when marking done
+    }
     scale.value = withSequence(
       withTiming(1.12, { duration: 120 }),
       withSpring(1, { damping: 12, stiffness: 200 }),
@@ -75,16 +81,23 @@ export function TodayToggle({ done, onPress, color }: TodayToggleProps) {
       accessibilityRole="button"
       accessibilityState={{ checked: done }}
       accessibilityLabel={done ? 'Mark as not done today' : 'Mark as done today'}>
-      <Animated.View style={[styles.base, containerStyle]}>
-        <Animated.View style={checkStyle}>
-          <SymbolView name="checkmark" size={18} weight="bold" tintColor={theme.colors.canvas} />
+      <View style={styles.host}>
+        <SparkleBurst ref={sparkleRef} color={color} />
+        <Animated.View style={[styles.base, containerStyle]}>
+          <Animated.View style={checkStyle}>
+            <SymbolView name="checkmark" size={18} weight="bold" tintColor={theme.colors.canvas} />
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create(() => ({
+  host: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   base: {
     width: 38,
     height: 38,
