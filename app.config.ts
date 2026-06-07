@@ -8,6 +8,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'Tucan',
   slug: 'Tucan',
+  owner: 'carlosprnt',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
@@ -62,6 +63,11 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    eas: {
+      projectId: 'd97a8b93-3e7c-44e0-a01c-3804c943b02b',
+    },
   },
 };
 
