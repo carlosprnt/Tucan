@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { requestNotificationPermission } from '@/lib/notifications';
 import { applyThemePref } from '@/lib/theme-control';
 import {
   auth$,
@@ -37,7 +38,9 @@ const Settings = observer(function Settings() {
     updateProfile({ theme_pref: pref });
   }
 
-  function onToggleReminder(value: boolean) {
+  async function onToggleReminder(value: boolean) {
+    // The root layout reschedules from the saved preference; just opt in here.
+    if (value) await requestNotificationPermission();
     updateProfile({
       reminder_enabled: value,
       reminder_time: value ? (reminderTime ?? '09:00:00') : reminderTime,
@@ -107,7 +110,8 @@ const Settings = observer(function Settings() {
           </>
         )}
         <Text style={styles.note}>
-          Notifications are scheduled in a later step; this saves your preference.
+          A local notification fires daily at this time (needs notification
+          permission).
         </Text>
       </Section>
 

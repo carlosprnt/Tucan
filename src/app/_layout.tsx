@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
+import { rescheduleReminder } from '@/lib/notifications';
 import { applyThemePref } from '@/lib/theme-control';
 import { auth$, currentProfile, initStore, type ThemePref } from '@/store';
 
@@ -28,6 +29,8 @@ function RootNavigator() {
   const themePref = use$(
     () => (currentProfile()?.theme_pref as ThemePref | undefined) ?? 'auto',
   );
+  const reminderEnabled = use$(() => currentProfile()?.reminder_enabled ?? false);
+  const reminderTime = use$(() => currentProfile()?.reminder_time ?? null);
 
   useEffect(() => {
     initStore();
@@ -37,6 +40,11 @@ function RootNavigator() {
   useEffect(() => {
     applyThemePref(themePref);
   }, [themePref]);
+
+  // Re-apply the daily reminder whenever the saved preference changes.
+  useEffect(() => {
+    void rescheduleReminder(reminderEnabled, reminderTime);
+  }, [reminderEnabled, reminderTime]);
 
   useEffect(() => {
     if (initializing) return;
