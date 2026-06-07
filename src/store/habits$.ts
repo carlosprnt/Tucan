@@ -4,7 +4,7 @@ import { todayKey } from '@/lib/date';
 import { uuidv4 } from '@/lib/id';
 import type { Tables } from '@/types/database';
 
-import { requireUserId } from './auth';
+import { getUserId } from './auth';
 import { customSynced } from './sync';
 
 export type Habit = Tables<'habits'>;
@@ -42,13 +42,15 @@ export interface NewHabitInput {
   start_date?: string;
 }
 
-/** Optimistically create a habit (synced in the background). Returns its id. */
+/** Optimistically create a habit (synced in the background). Returns its id, or '' if signed out. */
 export function createHabit(input: NewHabitInput): string {
+  const userId = getUserId();
+  if (!userId) return '';
   const id = uuidv4();
   const now = new Date().toISOString();
   const row: Habit = {
     id,
-    user_id: requireUserId(),
+    user_id: userId,
     name: input.name,
     description: input.description ?? null,
     icon: input.icon ?? null,
@@ -69,22 +71,28 @@ export type HabitPatch = Partial<
 >;
 
 export function updateHabit(id: string, patch: HabitPatch): void {
-  (habits$[id] as Observable<Habit>).assign(patch);
+  (habits$[id] as Observable<Habit>).assign({
+    ...patch,
+    updated_at: new Date().toISOString(),
+  });
 }
 
 /** Soft archive: keeps history, hides from the active list. */
 export function archiveHabit(id: string): void {
-  habits$[id].archived_at.set(new Date().toISOString());
+  const now = new Date().toISOString();
+  (habits$[id] as Observable<Habit>).assign({ archived_at: now, updated_at: now });
 }
 
 /** Soft delete (tombstone) — syncs as deleted=true. */
 export function deleteHabit(id: string): void {
-  habits$[id].deleted.set(true);
+  const now = new Date().toISOString();
+  (habits$[id] as Observable<Habit>).assign({ deleted: true, updated_at: now });
 }
 
 /** Persist a manual reorder of the visible habits. */
 export function reorderHabits(orderedIds: string[]): void {
+  const now = new Date().toISOString();
   orderedIds.forEach((id, index) => {
-    habits$[id].sort_order.set(index);
+    (habits$[id] as Observable<Habit>).assign({ sort_order: index, updated_at: now });
   });
 }

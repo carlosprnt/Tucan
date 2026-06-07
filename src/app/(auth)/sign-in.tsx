@@ -28,7 +28,9 @@ export default function SignIn() {
     try {
       await fn();
     } catch (e) {
-      Alert.alert('Sign in failed', e instanceof Error ? e.message : 'Unknown error');
+      // Log the real error; show the user something friendly.
+      console.warn('Sign-in error', e);
+      Alert.alert('Couldn’t sign you in', 'Something went wrong. Please try again.');
     } finally {
       setBusy(null);
     }

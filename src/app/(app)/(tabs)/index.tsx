@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { HabitCard } from '@/components/HabitCard';
 import { haptics } from '@/lib/haptics';
-import { listHabits } from '@/store';
+import { isStoreHydrated, listHabits } from '@/store';
 
 function todayParts() {
   const d = new Date();
@@ -21,6 +21,7 @@ function todayParts() {
 
 const Today = observer(function Today() {
   const habits = listHabits();
+  const hydrated = isStoreHydrated();
 
   return (
     <View style={styles.container}>
@@ -30,7 +31,7 @@ const Today = observer(function Today() {
         renderItem={({ item }) => <HabitCard habit={item} />}
         ListHeaderComponent={<Header />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={<EmptyState />}
+        ListEmptyComponent={hydrated ? <EmptyState /> : <SkeletonList />}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       />
@@ -38,12 +39,23 @@ const Today = observer(function Today() {
   );
 });
 
+function SkeletonList() {
+  return (
+    <View style={styles.skeletonList}>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={styles.skeletonCard} />
+      ))}
+    </View>
+  );
+}
+
 export default Today;
 
 function Header() {
   const { day, sub } = todayParts();
   return (
     <View style={styles.header}>
+      <Text style={styles.kicker}>TODAY</Text>
       <View style={styles.dateRow}>
         <Text style={styles.dayNum}>{day}</Text>
         <View style={styles.accentDot} />
@@ -57,17 +69,19 @@ function EmptyState() {
   const router = useRouter();
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>No habits yet</Text>
+      <Text style={styles.emptyTitle}>Start your first habit</Text>
       <Text style={styles.emptyBody}>
-        Start with one small thing you want to do every day.
+        Pick one small thing to do daily. Mark it done and watch the grid fill in.
       </Text>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add your first habit"
         style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
         onPress={() => {
           haptics.light();
           router.push('/habit/new');
         }}>
-        <Text style={styles.emptyButtonText}>Create habit</Text>
+        <Text style={styles.emptyButtonText}>Add your first habit</Text>
       </Pressable>
     </View>
   );
@@ -88,6 +102,12 @@ const styles = StyleSheet.create((theme, rt) => ({
   header: {
     marginBottom: theme.space.xl,
     gap: theme.space.xs,
+  },
+  kicker: {
+    fontSize: theme.font.caption,
+    fontWeight: theme.weight.medium,
+    letterSpacing: 1,
+    color: theme.colors.textMuted,
   },
   dateRow: {
     flexDirection: 'row',
@@ -115,6 +135,15 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   separator: {
     height: theme.space.md,
+  },
+  skeletonList: {
+    gap: theme.space.md,
+  },
+  skeletonCard: {
+    height: 132,
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.card,
+    opacity: 0.6,
   },
   empty: {
     flex: 1,

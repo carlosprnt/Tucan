@@ -30,7 +30,14 @@ const HabitDetail = observer(function HabitDetail() {
     return (
       <View style={styles.container}>
         <Header onBack={() => router.back()} />
-        <Text style={styles.missing}>Habit not found.</Text>
+        <View style={styles.notFound}>
+          <Text style={styles.missing}>This habit no longer exists.</Text>
+          <Pressable
+            style={({ pressed }) => [styles.notFoundBtn, pressed && { opacity: 0.7 }]}
+            onPress={() => router.replace('/')}>
+            <Text style={styles.notFoundBtnText}>Back to Today</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -74,11 +81,11 @@ const HabitDetail = observer(function HabitDetail() {
       {mode === 'month' ? (
         <View style={styles.section}>
           <View style={styles.monthNav}>
-            <Pressable hitSlop={10} onPress={() => shiftMonth(-1)} style={styles.navBtn}>
+            <Pressable hitSlop={10} onPress={() => shiftMonth(-1)} accessibilityRole="button" accessibilityLabel="Previous month" style={styles.navBtn}>
               <SymbolView name="chevron.left" size={18} tintColor={theme.colors.textSecondary} />
             </Pressable>
             <Text style={styles.monthLabel}>{monthLabel(cursor.year, cursor.month)}</Text>
-            <Pressable hitSlop={10} onPress={() => shiftMonth(1)} style={styles.navBtn}>
+            <Pressable hitSlop={10} onPress={() => shiftMonth(1)} accessibilityRole="button" accessibilityLabel="Next month" style={styles.navBtn}>
               <SymbolView name="chevron.right" size={18} tintColor={theme.colors.textSecondary} />
             </Pressable>
           </View>
@@ -91,6 +98,7 @@ const HabitDetail = observer(function HabitDetail() {
             color={habit.color}
             onToggleDay={(key) => toggleCompletion(habit.id, key)}
           />
+          <Text style={styles.hint}>Tap any past day to fill it in.</Text>
         </View>
       ) : (
         <Accumulation total={stats.total} percent={stats.percent} accent={accent} />
@@ -116,21 +124,17 @@ function Accumulation({
   const columns =
     width > 0 ? Math.max(1, Math.floor((width + gap) / (dotSize + gap))) : 0;
   const states: DotState[] = Array.from({ length: total }, () => 'done');
-  const now = new Date();
 
   return (
     <View style={styles.section} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
       {total === 0 ? (
-        <Text style={styles.missing}>No completions yet.</Text>
+        <Text style={styles.missing}>No dots yet — mark today done to start.</Text>
       ) : (
         columns > 0 && (
           <DotGrid states={states} columns={columns} cellSize={dotSize} gap={gap} color={accent} />
         )
       )}
-      <Text style={styles.accFooter}>
-        {now.getFullYear()}{' '}
-        {now.toLocaleDateString(undefined, { month: 'short' })} · {percent}%
-      </Text>
+      <Text style={styles.accFooter}>{percent}% of days since you started</Text>
     </View>
   );
 }
@@ -144,7 +148,7 @@ function Header({ onBack, onEdit }: { onBack: () => void; onEdit?: () => void })
       </Pressable>
       {onEdit && (
         <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
-          <SymbolView name="slider.horizontal.3" size={20} tintColor={theme.colors.textPrimary} />
+          <SymbolView name="pencil" size={20} tintColor={theme.colors.textPrimary} />
         </Pressable>
       )}
     </View>
@@ -166,13 +170,16 @@ function Segmented({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode)
       {(['month', 'accumulation'] as ViewMode[]).map((m) => (
         <Pressable
           key={m}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: mode === m }}
+          accessibilityLabel={m === 'month' ? 'Month' : 'All time'}
           onPress={() => {
             haptics.selection();
             onChange(m);
           }}
           style={[styles.segment, mode === m && styles.segmentActive]}>
           <Text style={[styles.segmentText, mode === m && styles.segmentTextActive]}>
-            {m === 'month' ? 'Month' : 'Accumulation'}
+            {m === 'month' ? 'Month' : 'All time'}
           </Text>
         </Pressable>
       ))}
@@ -286,16 +293,33 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontWeight: theme.weight.semibold,
     color: theme.colors.textPrimary,
   },
-  accGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
   accFooter: {
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
   },
+  hint: {
+    fontSize: theme.font.caption,
+    color: theme.colors.textMuted,
+  },
   missing: {
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
+  },
+  notFound: {
+    gap: theme.space.lg,
+    alignItems: 'flex-start',
+  },
+  notFoundBtn: {
+    height: 48,
+    paddingHorizontal: theme.space.xl,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notFoundBtnText: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.card,
   },
 }));

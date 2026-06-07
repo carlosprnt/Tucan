@@ -8,12 +8,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { todayKey } from '@/lib/date';
 import { buildRecentStates } from '@/lib/grid';
 import { habitIcon } from '@/lib/icons';
-import {
-  completedDates,
-  toggleCompletion,
-  totalForHabit,
-  type Habit,
-} from '@/store';
+import { completedDates, toggleCompletion, type Habit } from '@/store';
 
 import { DottedSeparator } from './DottedSeparator';
 import { DotGrid } from './DotGrid';
@@ -30,7 +25,7 @@ export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }
 
   const today = todayKey();
   const completed = completedDates(habit.id);
-  const total = totalForHabit(habit.id);
+  const total = completed.size; // a completion is one row per day, so size == total
   const done = completed.has(today);
 
   const columns =

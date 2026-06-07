@@ -33,5 +33,8 @@ export type ProfilePatch = Partial<
 export function updateProfile(patch: ProfilePatch): void {
   const id = getUserId();
   if (!id) return;
-  (profiles$[id] as Observable<Profile>).assign(patch);
+  (profiles$[id] as Observable<Profile>).assign({
+    ...patch,
+    updated_at: new Date().toISOString(),
+  });
 }

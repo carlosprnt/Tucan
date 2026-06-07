@@ -13,7 +13,7 @@ type TabBarProps = {
 
 const TAB_ICONS: Record<string, SFSymbol> = {
   index: 'square.grid.2x2.fill',
-  global: 'square.grid.3x3.fill',
+  global: 'chart.bar.fill',
 };
 
 /** Floating 3-position bar: Today · + (create) · Global. The + is an action. */

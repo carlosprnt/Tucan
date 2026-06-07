@@ -4,17 +4,25 @@ import { SymbolView } from 'expo-symbols';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { DottedSeparator } from '@/components/DottedSeparator';
 import { YearHeatmap } from '@/components/YearHeatmap';
 import { haptics } from '@/lib/haptics';
 import { todayKey } from '@/lib/date';
 import { habitIcon } from '@/lib/icons';
-import { completedDates, listHabits, statsForHabit, totalForHabit } from '@/store';
+import {
+  completedDates,
+  isStoreHydrated,
+  listHabits,
+  statsForHabit,
+  totalForHabit,
+} from '@/store';
 
 const Global = observer(function Global() {
   const router = useRouter();
   const { theme } = useUnistyles();
   const today = todayKey();
   const habits = listHabits();
+  const hydrated = isStoreHydrated();
 
   const totalAll = habits.reduce((sum, h) => sum + totalForHabit(h.id), 0);
   const avgPercent = habits.length
@@ -30,7 +38,7 @@ const Global = observer(function Global() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Global</Text>
+        <Text style={styles.title}>Overview</Text>
         <Pressable
           hitSlop={12}
           accessibilityRole="button"
@@ -44,12 +52,21 @@ const Global = observer(function Global() {
       </View>
 
       <View style={styles.summary}>
-        <Stat value={String(totalAll)} label="total completed" />
-        <Stat value={`${avgPercent}%`} label="average" />
+        <Stat value={String(totalAll)} label="completions" />
+        <Stat value={`${avgPercent}%`} label="avg. completion" />
       </View>
 
+      {habits.length > 0 && <DottedSeparator />}
+
       {habits.length === 0 ? (
-        <Text style={styles.empty}>Create a habit to see your year.</Text>
+        hydrated ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Your year, one dot at a time</Text>
+            <Text style={styles.emptyBody}>Create a habit to start filling in the grid.</Text>
+          </View>
+        ) : (
+          <View style={styles.skeletonCard} />
+        )
       ) : (
         habits.map((h) => (
           <View key={h.id} style={styles.card}>
@@ -114,8 +131,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: 2,
   },
   statValue: {
-    fontSize: theme.font.title,
-    fontWeight: theme.weight.bold,
+    fontSize: theme.font.display,
+    fontWeight: theme.weight.heavy,
+    letterSpacing: -1,
     color: theme.colors.textPrimary,
   },
   statLabel: {
@@ -140,11 +158,27 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textPrimary,
   },
   cardTotal: {
-    fontSize: theme.font.caption,
-    color: theme.colors.textSecondary,
+    fontSize: theme.font.heading,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.textPrimary,
   },
   empty: {
+    gap: theme.space.xs,
+    paddingTop: theme.space.lg,
+  },
+  emptyTitle: {
+    fontSize: theme.font.heading,
+    fontWeight: theme.weight.bold,
+    color: theme.colors.textPrimary,
+  },
+  emptyBody: {
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
+  },
+  skeletonCard: {
+    height: 160,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.card,
+    opacity: 0.6,
   },
 }));

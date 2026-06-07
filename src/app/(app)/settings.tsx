@@ -5,7 +5,7 @@ import { observer, use$ } from '@legendapp/state/react';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { DottedSeparator } from '@/components/DottedSeparator';
@@ -43,12 +43,29 @@ const Settings = observer(function Settings() {
 
   async function onToggleReminder(value: boolean) {
     haptics.light();
-    // The root layout reschedules from the saved preference; just opt in here.
-    if (value) await requestNotificationPermission();
+    if (value) {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        Alert.alert(
+          'Notifications are off',
+          'Turn on notifications for Tucan in iOS Settings to get a daily reminder.',
+        );
+        return; // don't show the switch as on when it can't fire
+      }
+    }
+    // The root layout reschedules from the saved preference.
     updateProfile({
       reminder_enabled: value,
       reminder_time: value ? (reminderTime ?? '09:00:00') : reminderTime,
     });
+  }
+
+  function confirmSignOut() {
+    haptics.warning();
+    Alert.alert('Sign out?', 'Your habits stay synced and will be here when you’re back.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
+    ]);
   }
 
   function onTimeChange(_e: DateTimePickerEvent, date?: Date) {
@@ -92,7 +109,7 @@ const Settings = observer(function Settings() {
           <Switch
             value={reminderEnabled}
             onValueChange={onToggleReminder}
-            trackColor={{ true: theme.colors.ink }}
+            trackColor={{ true: theme.colors.ink, false: theme.colors.separator }}
           />
         </View>
         {reminderEnabled && (
@@ -114,17 +131,33 @@ const Settings = observer(function Settings() {
           </>
         )}
         <Text style={styles.note}>
-          A local notification fires daily at this time (needs notification
-          permission).
+          We&apos;ll nudge you once a day at this time. Requires notification access.
         </Text>
       </Section>
 
       {/* Premium */}
       <Section label="Premium">
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Custom habit colors</Text>
-          <Text style={styles.rowValue}>{isPremium ? 'Active' : 'Locked'}</Text>
-        </View>
+        {isPremium ? (
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Custom habit colors</Text>
+            <Text style={styles.rowValue}>Active</Text>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Get Tucan Premium"
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            onPress={() => {
+              haptics.light();
+              Alert.alert('Tucan Premium', 'Custom habit colors and more — coming soon.');
+            }}>
+            <View style={styles.premiumText}>
+              <Text style={styles.rowLabel}>Get Tucan Premium</Text>
+              <Text style={styles.note}>Custom habit colors and more.</Text>
+            </View>
+            <SymbolView name="chevron.right" size={16} tintColor={theme.colors.textMuted} />
+          </Pressable>
+        )}
       </Section>
 
       {/* Account */}
@@ -137,11 +170,10 @@ const Settings = observer(function Settings() {
         </View>
         <DottedSeparator />
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
           style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
-          onPress={() => {
-            haptics.warning();
-            signOut();
-          }}>
+          onPress={confirmSignOut}>
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>
       </Section>
@@ -267,6 +299,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.font.caption,
     color: theme.colors.textMuted,
     marginTop: theme.space.xs,
+  },
+  premiumText: {
+    flex: 1,
+    gap: 2,
   },
   signOut: {
     minHeight: 52,

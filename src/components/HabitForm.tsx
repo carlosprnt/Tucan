@@ -59,7 +59,10 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   function onColorPress(value: string | null, premium: boolean) {
     if (premium && !isPremium) {
       haptics.warning();
-      Alert.alert('Premium color', 'Custom colors are a premium feature.');
+      Alert.alert('Unlock colors', 'Custom habit colors are part of Tucan Premium.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'See Premium', onPress: () => router.push('/settings') },
+      ]);
       return;
     }
     haptics.selection();
@@ -92,7 +95,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   function onDelete() {
     if (!habitId) return;
     haptics.warning();
-    Alert.alert('Delete habit', 'This hides the habit and its history.', [
+    Alert.alert('Delete habit', "This removes the habit and all its history. This can't be undone.", [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -155,7 +158,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="Optional"
+            placeholder="Add a note (optional)"
             placeholderTextColor={theme.colors.textMuted}
             style={styles.input}
             multiline
@@ -170,6 +173,9 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               return (
                 <Pressable
                   key={opt.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${opt.label} icon`}
+                  accessibilityState={{ selected }}
                   onPress={() => {
                     haptics.selection();
                     setIcon(opt.key);
@@ -196,14 +202,18 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               return (
                 <Pressable
                   key={opt.label}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={locked ? `${opt.label} color (premium)` : `${opt.label} color`}
+                  accessibilityState={{ selected }}
                   onPress={() => onColorPress(opt.value, opt.premium)}
-                  style={[
-                    styles.swatch,
-                    { backgroundColor: swatch },
-                    selected && styles.swatchSelected,
-                  ]}>
-                  {locked && (
+                  style={[styles.swatch, { backgroundColor: swatch }]}>
+                  {locked ? (
                     <SymbolView name="lock.fill" size={12} tintColor={theme.colors.canvas} />
+                  ) : (
+                    selected && (
+                      <SymbolView name="checkmark" size={14} weight="bold" tintColor={theme.colors.canvas} />
+                    )
                   )}
                 </Pressable>
               );
@@ -284,8 +294,8 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   save: {
     fontSize: theme.font.body,
-    fontWeight: theme.weight.semibold,
-    color: theme.colors.accent,
+    fontWeight: theme.weight.bold,
+    color: theme.colors.textPrimary,
   },
   saveDisabled: {
     color: theme.colors.textMuted,

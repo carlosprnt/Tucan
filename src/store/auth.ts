@@ -47,6 +47,8 @@ export function initAuth(): void {
   });
 }
 
-export async function signOut(): Promise<void> {
+/** Low-level: end the Supabase session. Prefer `signOut` from the store index,
+ * which also clears the local cache to prevent cross-account data leakage. */
+export async function endSession(): Promise<void> {
   await supabase.auth.signOut();
 }

@@ -35,10 +35,13 @@ export function addDays(key: DateKey, days: number): DateKey {
   return toDateKey(date);
 }
 
-/** Whole local days from `a` to `b` (b - a). Negative if b is before a. */
+/** Whole calendar days from `a` to `b` (b - a). Negative if b is before a. */
 export function daysBetween(a: DateKey, b: DateKey): number {
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
-  const diff = fromDateKey(b).getTime() - fromDateKey(a).getTime();
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  // Compare in UTC so each day is exactly 24h, immune to local DST shifts.
+  const diff = Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad);
   return Math.round(diff / MS_PER_DAY);
 }
 

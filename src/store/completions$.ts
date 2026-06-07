@@ -4,7 +4,7 @@ import { elapsedDaysInclusive, type DateKey } from '@/lib/date';
 import { uuidv4 } from '@/lib/id';
 import type { Tables } from '@/types/database';
 
-import { requireUserId } from './auth';
+import { getUserId } from './auth';
 import { customSynced } from './sync';
 
 export type Completion = Tables<'completions'>;
@@ -40,9 +40,12 @@ export function isDone(habitId: string, date: DateKey): boolean {
  * violate the unique(habit_id, date) constraint); a fresh mark inserts a row.
  */
 export function toggleCompletion(habitId: string, date: DateKey): void {
+  const userId = getUserId();
+  if (!userId) return; // no session — never throw from a press handler
   const existing = findCompletion(habitId, date);
   if (existing) {
     completions$[existing.id].deleted.set(!existing.deleted);
+    completions$[existing.id].updated_at.set(new Date().toISOString());
     return;
   }
   const id = uuidv4();
@@ -50,7 +53,7 @@ export function toggleCompletion(habitId: string, date: DateKey): void {
   const row: Completion = {
     id,
     habit_id: habitId,
-    user_id: requireUserId(),
+    user_id: userId,
     date,
     created_at: now,
     updated_at: now,
