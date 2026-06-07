@@ -1,3 +1,5 @@
+import '@/theme/unistyles';
+
 import { Tabs } from 'expo-router';
 
 import { FloatingTabBar } from '@/components/FloatingTabBar';

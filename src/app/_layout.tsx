@@ -1,3 +1,5 @@
+import '@/theme/unistyles'; // configure Unistyles before any StyleSheet.create runs
+
 import { use$ } from '@legendapp/state/react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

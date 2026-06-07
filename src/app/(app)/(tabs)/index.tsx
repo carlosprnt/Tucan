@@ -1,3 +1,5 @@
+import '@/theme/unistyles';
+
 import { observer } from '@legendapp/state/react';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, Text, View } from 'react-native';

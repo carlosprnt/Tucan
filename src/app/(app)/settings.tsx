@@ -1,3 +1,5 @@
+import '@/theme/unistyles';
+
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';

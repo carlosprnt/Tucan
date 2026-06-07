@@ -1,3 +1,5 @@
+import '@/theme/unistyles';
+
 import { useLocalSearchParams } from 'expo-router';
 
 import { HabitForm } from '@/components/HabitForm';

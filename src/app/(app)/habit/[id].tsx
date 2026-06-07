@@ -1,3 +1,5 @@
+import '@/theme/unistyles';
+
 import { observer } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
