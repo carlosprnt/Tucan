@@ -212,7 +212,7 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.space.xl,
+    gap: theme.space.lg,
     height: 52,
     opacity: 0,
   },
@@ -221,7 +221,7 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.space.xl,
+    gap: theme.space.lg,
   },
   item: {
     width: 44,
