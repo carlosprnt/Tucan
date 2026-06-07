@@ -5,6 +5,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native-unistyles';
 
 import { rescheduleReminder } from '@/lib/notifications';
@@ -13,10 +14,10 @@ import { auth$, currentProfile, initStore, type ThemePref } from '@/store';
 
 export default function RootLayout() {
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="auto" />
       <RootNavigator />
-    </>
+    </GestureHandlerRootView>
   );
 }
 

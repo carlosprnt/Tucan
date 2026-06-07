@@ -18,7 +18,15 @@ const CELL = 11;
 const GAP = 5;
 const GRID_ROWS = 3;
 
-export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }) {
+export const HabitCard = observer(function HabitCard({
+  habit,
+  onLongPress,
+  dragging,
+}: {
+  habit: Habit;
+  onLongPress?: () => void;
+  dragging?: boolean;
+}) {
   const router = useRouter();
   const { theme } = useUnistyles();
   const [gridWidth, setGridWidth] = useState(0);
@@ -42,9 +50,11 @@ export const HabitCard = observer(function HabitCard({ habit }: { habit: Habit }
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, (pressed || dragging) && styles.pressed]}
       accessibilityRole="button"
       accessibilityLabel={`${habit.name}, ${total} days completed`}
+      onLongPress={onLongPress}
+      delayLongPress={220}
       onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}>
       <View style={styles.top}>
         <View style={styles.iconWrap}>
