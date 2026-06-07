@@ -1,6 +1,3 @@
-// Configure Unistyles before any styled component mounts.
-import '@/theme/unistyles';
-
 import { use$ } from '@legendapp/state/react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
