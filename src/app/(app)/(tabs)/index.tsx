@@ -25,8 +25,8 @@ import {
   type Habit,
 } from '@/store';
 
-// Shared spring so every element repositions with the same physical feel.
-const LAYOUT = LinearTransition.springify().damping(20).stiffness(180).mass(0.5);
+// Shared transition so every element moves with the same feel — no spring bounce.
+const LAYOUT = LinearTransition.duration(280);
 const ENTER = FadeIn.duration(260);
 const EXIT = FadeOut.duration(140);
 
@@ -45,7 +45,7 @@ const Home = observer(function Home() {
       <Header overview={overview} onToggle={() => setOverview((o) => !o)} />
 
       {overview && !isEmpty && (
-        <Animated.View entering={FadeInDown.springify().damping(20)} exiting={FadeOutUp.duration(160)} layout={LAYOUT}>
+        <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOutUp.duration(160)} layout={LAYOUT}>
           <Summary habits={habits} />
         </Animated.View>
       )}
