@@ -1,22 +1,77 @@
-import { Pressable, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { observer } from '@legendapp/state/react';
+import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { signOut } from '@/store';
+import { YearHeatmap } from '@/components/YearHeatmap';
+import { todayKey } from '@/lib/date';
+import { habitIcon } from '@/lib/icons';
+import { completedDates, listHabits, statsForHabit, totalForHabit } from '@/store';
 
-// Placeholder — the aggregated year-heatmap view is built in a later step.
-// Sign out lives here temporarily until the Settings screen exists.
-export default function Global() {
+const Global = observer(function Global() {
+  const router = useRouter();
+  const { theme } = useUnistyles();
+  const today = todayKey();
+  const habits = listHabits();
+
+  const totalAll = habits.reduce((sum, h) => sum + totalForHabit(h.id), 0);
+  const avgPercent = habits.length
+    ? Math.round(
+        habits.reduce((sum, h) => sum + statsForHabit(h.id, h.start_date).percent, 0) /
+          habits.length,
+      )
+    : 0;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}>
+      <View style={styles.headerRow}>
         <Text style={styles.title}>Global</Text>
-        <Text style={styles.subtitle}>Year heatmap coming soon.</Text>
+        <Pressable hitSlop={12} onPress={() => router.push('/settings')}>
+          <SymbolView name="gearshape" size={24} tintColor={theme.colors.textPrimary} />
+        </Pressable>
       </View>
-      <Pressable
-        style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
-        onPress={() => signOut()}>
-        <Text style={styles.signOutText}>Sign out</Text>
-      </Pressable>
+
+      <View style={styles.summary}>
+        <Stat value={String(totalAll)} label="total completed" />
+        <Stat value={`${avgPercent}%`} label="average" />
+      </View>
+
+      {habits.length === 0 ? (
+        <Text style={styles.empty}>Create a habit to see your year.</Text>
+      ) : (
+        habits.map((h) => (
+          <View key={h.id} style={styles.card}>
+            <View style={styles.cardHead}>
+              <SymbolView name={habitIcon(h.icon)} size={18} tintColor={h.color ?? theme.colors.ink} />
+              <Text style={styles.cardName} numberOfLines={1}>
+                {h.name}
+              </Text>
+              <Text style={styles.cardTotal}>{totalForHabit(h.id)}</Text>
+            </View>
+            <YearHeatmap
+              completed={completedDates(h.id)}
+              startDate={h.start_date}
+              today={today}
+              color={h.color}
+            />
+          </View>
+        ))
+      )}
+    </ScrollView>
+  );
+});
+
+export default Global;
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -25,13 +80,17 @@ const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
+  },
+  content: {
     paddingHorizontal: theme.space.lg,
     paddingTop: rt.insets.top + theme.space.lg,
     paddingBottom: rt.insets.bottom + 96,
+    gap: theme.space.xl,
   },
-  header: {
-    flex: 1,
-    gap: theme.space.xs,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: theme.font.display,
@@ -39,24 +98,45 @@ const styles = StyleSheet.create((theme, rt) => ({
     letterSpacing: -1,
     color: theme.colors.textPrimary,
   },
-  subtitle: {
-    fontSize: theme.font.body,
+  summary: {
+    flexDirection: 'row',
+    gap: theme.space.xxxl,
+  },
+  stat: {
+    gap: 2,
+  },
+  statValue: {
+    fontSize: theme.font.title,
+    fontWeight: theme.weight.bold,
+    color: theme.colors.textPrimary,
+  },
+  statLabel: {
+    fontSize: theme.font.caption,
     color: theme.colors.textSecondary,
   },
-  signOut: {
-    height: 52,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.separator,
-    alignItems: 'center',
-    justifyContent: 'center',
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.space.lg,
+    gap: theme.space.md,
   },
-  signOutText: {
+  cardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.sm,
+  },
+  cardName: {
+    flex: 1,
     fontSize: theme.font.body,
     fontWeight: theme.weight.semibold,
     color: theme.colors.textPrimary,
   },
-  pressed: {
-    opacity: 0.7,
+  cardTotal: {
+    fontSize: theme.font.caption,
+    color: theme.colors.textSecondary,
+  },
+  empty: {
+    fontSize: theme.font.body,
+    color: theme.colors.textSecondary,
   },
 }));

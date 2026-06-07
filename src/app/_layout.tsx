@@ -8,7 +8,8 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { auth$, initStore } from '@/store';
+import { applyThemePref } from '@/lib/theme-control';
+import { auth$, currentProfile, initStore, type ThemePref } from '@/store';
 
 export default function RootLayout() {
   return (
@@ -24,10 +25,18 @@ function RootNavigator() {
   const segments = useSegments();
   const initializing = use$(auth$.initializing);
   const session = use$(auth$.session);
+  const themePref = use$(
+    () => (currentProfile()?.theme_pref as ThemePref | undefined) ?? 'auto',
+  );
 
   useEffect(() => {
     initStore();
   }, []);
+
+  // Keep the runtime theme in sync with the user's saved preference.
+  useEffect(() => {
+    applyThemePref(themePref);
+  }, [themePref]);
 
   useEffect(() => {
     if (initializing) return;
