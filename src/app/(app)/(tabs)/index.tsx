@@ -16,6 +16,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitCard } from '@/components/HabitCard';
 import { OverviewCard } from '@/components/OverviewCard';
+import { TopFade } from '@/components/TopFade';
 import { haptics } from '@/lib/haptics';
 import {
   isStoreHydrated,
@@ -31,6 +32,7 @@ const ENTER = FadeIn.duration(260);
 const EXIT = FadeOut.duration(140);
 
 const Home = observer(function Home() {
+  const { rt } = useUnistyles();
   const habits = listHabits();
   const hydrated = isStoreHydrated();
   const [overview, setOverview] = useState(false);
@@ -38,37 +40,41 @@ const Home = observer(function Home() {
   const isEmpty = habits.length === 0;
 
   return (
-    <Animated.ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}>
-      <Header overview={overview} onToggle={() => setOverview((o) => !o)} />
+    <View style={styles.screen}>
+      <Animated.ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
+        <Header overview={overview} onToggle={() => setOverview((o) => !o)} />
 
-      {overview && !isEmpty && (
-        <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOutUp.duration(160)} layout={LAYOUT}>
-          <Summary habits={habits} />
-        </Animated.View>
-      )}
-
-      {isEmpty ? (
-        hydrated ? (
-          <EmptyState />
-        ) : (
-          <SkeletonList />
-        )
-      ) : (
-        habits.map((habit, i) => (
-          <Animated.View key={habit.id} layout={LAYOUT} style={styles.item}>
-            <Animated.View
-              key={overview ? 'overview' : 'list'}
-              entering={ENTER.delay(i * 22)}
-              exiting={EXIT}>
-              {overview ? <OverviewCard habit={habit} /> : <HabitCard habit={habit} />}
-            </Animated.View>
+        {overview && !isEmpty && (
+          <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOutUp.duration(160)} layout={LAYOUT}>
+            <Summary habits={habits} />
           </Animated.View>
-        ))
-      )}
-    </Animated.ScrollView>
+        )}
+
+        {isEmpty ? (
+          hydrated ? (
+            <EmptyState />
+          ) : (
+            <SkeletonList />
+          )
+        ) : (
+          habits.map((habit, i) => (
+            <Animated.View key={habit.id} layout={LAYOUT} style={styles.item}>
+              <Animated.View
+                key={overview ? 'overview' : 'list'}
+                entering={ENTER.delay(i * 22)}
+                exiting={EXIT}>
+                {overview ? <OverviewCard habit={habit} /> : <HabitCard habit={habit} />}
+              </Animated.View>
+            </Animated.View>
+          ))
+        )}
+      </Animated.ScrollView>
+
+      <TopFade height={rt.insets.top + 28} />
+    </View>
   );
 });
 
@@ -157,6 +163,10 @@ function EmptyState() {
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
+  screen: {
+    flex: 1,
+    backgroundColor: theme.colors.canvas,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.canvas,

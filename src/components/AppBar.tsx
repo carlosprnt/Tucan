@@ -6,17 +6,20 @@ import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { TodayToggle } from '@/components/TodayToggle';
 import { todayKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import { completedDates, detailUI$, getHabit, toggleCompletion } from '@/store';
 
 const BAR_LAYOUT = LinearTransition.duration(240);
+// Fixed region height so the bar morphs from its center (vertically centered).
+const REGION_HEIGHT = 68;
 
 /**
- * Single persistent floating bar. It stays mounted across navigation and
- * morphs its items by context: the main tabs (Habits · + · Settings) or, inside
- * a habit, contextual actions (mark today · Month/All-time). The bar resizes
- * smoothly (layout) while the items crossfade.
+ * Single persistent floating bar. It stays mounted across navigation and morphs
+ * its items by context — main tabs (Habits · + · Settings) or, inside a habit,
+ * contextual actions (mark today · Month/All-time). The detail bar is smaller;
+ * the bar resizes from its center while the items crossfade.
  */
 export const AppBar = observer(function AppBar() {
   const pathname = usePathname();
@@ -28,6 +31,11 @@ export const AppBar = observer(function AppBar() {
 
   const isDetail = pathname.startsWith('/habit/');
 
+  // Detail bar is a bit smaller and tighter.
+  const barPadding = isDetail ? theme.space.xs : theme.space.sm;
+  const gap = isDetail ? theme.space.sm : theme.space.lg;
+  const contentHeight = isDetail ? 44 : 52;
+
   const renderItems = (): ReactNode => {
     if (isDetail) {
       const habitId = detailUI$.habitId.get();
@@ -35,32 +43,16 @@ export const AppBar = observer(function AppBar() {
       const today = todayKey();
       const habit = habitId ? getHabit(habitId) : undefined;
       const done = habitId ? completedDates(habitId).has(today) : false;
-      const accent = habit?.color ?? theme.colors.dotDone;
 
       return (
         <>
-          <Item
+          <TodayToggle
+            done={done}
+            color={habit?.color}
             onPress={() => {
-              if (!habitId) return;
-              if (done) haptics.light();
-              else haptics.medium();
-              toggleCompletion(habitId, today);
+              if (habitId) toggleCompletion(habitId, today);
             }}
-            label={done ? 'Mark today not done' : 'Mark today done'}
-            selected={done}>
-            <View
-              style={[
-                styles.check,
-                done ? { backgroundColor: accent, borderColor: accent } : styles.checkTodo,
-              ]}>
-              <SymbolView
-                name="checkmark"
-                size={17}
-                weight="bold"
-                tintColor={done ? theme.colors.canvas : theme.colors.textMuted}
-              />
-            </View>
-          </Item>
+          />
 
           <Item
             onPress={() => {
@@ -125,20 +117,22 @@ export const AppBar = observer(function AppBar() {
     <View
       pointerEvents="box-none"
       style={[styles.wrap, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
-      <Animated.View layout={BAR_LAYOUT} style={styles.bar}>
-        {/* Invisible sizer in flow defines the bar width for the active items. */}
-        <View style={styles.sizer} pointerEvents="none">
-          {renderItems()}
-        </View>
-        {/* Visible layer crossfades on context change without affecting size. */}
-        <Animated.View
-          key={isDetail ? 'detail' : 'main'}
-          entering={FadeIn.duration(220)}
-          exiting={FadeOut.duration(140)}
-          style={styles.layer}>
-          {renderItems()}
+      <View style={styles.region} pointerEvents="box-none">
+        <Animated.View layout={BAR_LAYOUT} style={[styles.bar, { padding: barPadding }]}>
+          {/* Invisible sizer in flow defines the bar size for the active items. */}
+          <View style={[styles.sizer, { gap, height: contentHeight }]} pointerEvents="none">
+            {renderItems()}
+          </View>
+          {/* Visible layer crossfades on context change without affecting size. */}
+          <Animated.View
+            key={isDetail ? 'detail' : 'main'}
+            entering={FadeIn.duration(220)}
+            exiting={FadeOut.duration(140)}
+            style={[styles.layer, { gap }]}>
+            {renderItems()}
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
+      </View>
     </View>
   );
 });
@@ -195,9 +189,12 @@ const styles = StyleSheet.create((theme) => ({
     bottom: 0,
     alignItems: 'center',
   },
+  region: {
+    height: REGION_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bar: {
-    // Equal margin on all sides (icon-to-edge matches top/bottom).
-    padding: theme.space.sm,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.card,
     borderWidth: 1,
@@ -212,8 +209,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.space.lg,
-    height: 52,
     opacity: 0,
   },
   layer: {
@@ -221,7 +216,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.space.lg,
   },
   item: {
     width: 44,
@@ -235,18 +229,6 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  check: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  checkTodo: {
-    backgroundColor: 'transparent',
-    borderColor: theme.colors.dotMissed,
   },
   pressed: {
     opacity: 0.6,
