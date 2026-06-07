@@ -2,36 +2,38 @@ import '@/theme/unistyles';
 
 import { observer } from '@legendapp/state/react';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
+import { FlatList, LayoutAnimation, Pressable, Text, View } from 'react-native';
+import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitCard } from '@/components/HabitCard';
+import { OverviewCard } from '@/components/OverviewCard';
 import { haptics } from '@/lib/haptics';
-import { isStoreHydrated, listHabits } from '@/store';
+import { isStoreHydrated, listHabits, statsForHabit, totalForHabit, type Habit } from '@/store';
 
-function todayParts() {
-  const d = new Date();
-  return {
-    day: d.getDate(),
-    sub: d.toLocaleDateString(undefined, {
-      weekday: 'long',
-      month: 'long',
-      year: 'numeric',
-    }),
-  };
-}
-
-const Today = observer(function Today() {
+const Home = observer(function Home() {
   const habits = listHabits();
   const hydrated = isStoreHydrated();
+  const [overview, setOverview] = useState(false);
+
+  function toggleOverview() {
+    haptics.selection();
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOverview((o) => !o);
+  }
 
   return (
     <View style={styles.container}>
       <FlatList
         data={habits}
         keyExtractor={(h) => h.id}
-        renderItem={({ item }) => <HabitCard habit={item} />}
-        ListHeaderComponent={<Header />}
+        renderItem={({ item }) =>
+          overview ? <OverviewCard habit={item} /> : <HabitCard habit={item} />
+        }
+        ListHeaderComponent={
+          <Header overview={overview} onToggle={toggleOverview} habits={habits} />
+        }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={hydrated ? <EmptyState /> : <SkeletonList />}
         contentContainerStyle={styles.content}
@@ -41,28 +43,73 @@ const Today = observer(function Today() {
   );
 });
 
+export default Home;
+
+function Header({
+  overview,
+  onToggle,
+  habits,
+}: {
+  overview: boolean;
+  onToggle: () => void;
+  habits: Habit[];
+}) {
+  const { theme } = useUnistyles();
+  return (
+    <View style={styles.header}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Your habits</Text>
+        <Pressable
+          hitSlop={12}
+          onPress={onToggle}
+          accessibilityRole="button"
+          accessibilityLabel={overview ? 'Show list' : 'Show overview'}
+          accessibilityState={{ selected: overview }}>
+          <SymbolView
+            name={overview ? 'square.grid.2x2.fill' : 'chart.bar.fill'}
+            size={24}
+            tintColor={overview ? theme.colors.ink : theme.colors.textSecondary}
+          />
+        </Pressable>
+      </View>
+
+      {overview && habits.length > 0 && <Summary habits={habits} />}
+    </View>
+  );
+}
+
+function Summary({ habits }: { habits: Habit[] }) {
+  const totalAll = habits.reduce((sum, h) => sum + totalForHabit(h.id), 0);
+  const avgPercent = habits.length
+    ? Math.round(
+        habits.reduce((sum, h) => sum + statsForHabit(h.id, h.start_date).percent, 0) /
+          habits.length,
+      )
+    : 0;
+
+  return (
+    <View style={styles.summary}>
+      <Stat value={String(totalAll)} label="completions" />
+      <Stat value={`${avgPercent}%`} label="avg. completion" />
+    </View>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 function SkeletonList() {
   return (
     <View style={styles.skeletonList}>
       {[0, 1, 2].map((i) => (
         <View key={i} style={styles.skeletonCard} />
       ))}
-    </View>
-  );
-}
-
-export default Today;
-
-function Header() {
-  const { day, sub } = todayParts();
-  return (
-    <View style={styles.header}>
-      <Text style={styles.kicker}>TODAY</Text>
-      <View style={styles.dateRow}>
-        <Text style={styles.dayNum}>{day}</Text>
-        <View style={styles.accentDot} />
-      </View>
-      <Text style={styles.date}>{sub}</Text>
     </View>
   );
 }
@@ -97,42 +144,39 @@ const styles = StyleSheet.create((theme, rt) => ({
   content: {
     paddingHorizontal: theme.space.lg,
     paddingTop: rt.insets.top + theme.space.lg,
-    // Clear the floating tab bar.
     paddingBottom: rt.insets.bottom + 96,
     flexGrow: 1,
   },
   header: {
     marginBottom: theme.space.xl,
-    gap: theme.space.xs,
+    gap: theme.space.lg,
   },
-  kicker: {
-    fontSize: theme.font.caption,
-    fontWeight: theme.weight.medium,
-    letterSpacing: 1,
-    color: theme.colors.textMuted,
-  },
-  dateRow: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.space.sm,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  dayNum: {
-    fontSize: theme.font.mega,
-    fontWeight: theme.weight.heavy,
-    letterSpacing: -2,
-    lineHeight: theme.font.mega,
+  title: {
+    fontSize: theme.font.title,
+    fontWeight: theme.weight.bold,
+    letterSpacing: -0.5,
     color: theme.colors.textPrimary,
   },
-  accentDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginTop: theme.space.md,
-    backgroundColor: theme.colors.accent,
+  summary: {
+    flexDirection: 'row',
+    gap: theme.space.xxxl,
   },
-  date: {
-    fontSize: theme.font.body,
-    fontWeight: theme.weight.medium,
+  stat: {
+    gap: 2,
+  },
+  statValue: {
+    fontSize: theme.font.display,
+    fontWeight: theme.weight.heavy,
+    letterSpacing: -1,
+    color: theme.colors.textPrimary,
+  },
+  statLabel: {
+    fontSize: theme.font.caption,
     color: theme.colors.textSecondary,
   },
   separator: {

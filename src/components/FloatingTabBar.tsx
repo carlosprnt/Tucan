@@ -13,7 +13,7 @@ type TabBarProps = {
 
 const TAB_ICONS: Record<string, SFSymbol> = {
   index: 'square.grid.2x2.fill',
-  global: 'chart.bar.fill',
+  settings: 'gearshape.fill',
 };
 
 /** Floating 3-position bar: Today · + (create) · Global. The + is an action. */
@@ -54,12 +54,12 @@ export function FloatingTabBar({ state, navigation }: TabBarProps) {
         </Pressable>
 
         <TabButton
-          symbol={TAB_ICONS.global}
-          label="Global"
-          active={activeName === 'global'}
+          symbol={TAB_ICONS.settings}
+          label="Settings"
+          active={activeName === 'settings'}
           onPress={() => {
             haptics.selection();
-            navigation.navigate('global');
+            navigation.navigate('settings');
           }}
         />
       </View>

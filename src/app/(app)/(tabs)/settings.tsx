@@ -4,7 +4,6 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { observer, use$ } from '@legendapp/state/react';
-import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
@@ -25,7 +24,6 @@ import {
 const THEME_OPTIONS: ThemePref[] = ['light', 'dark', 'auto'];
 
 const Settings = observer(function Settings() {
-  const router = useRouter();
   const { theme } = useUnistyles();
 
   const email = use$(() => auth$.session.get()?.user.email ?? '');
@@ -80,13 +78,7 @@ const Settings = observer(function Settings() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
-      <View style={styles.headerRow}>
-        <Pressable hitSlop={12} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" style={styles.back}>
-          <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Settings</Text>
-        <View style={styles.back} />
-      </View>
+      <Text style={styles.title}>Settings</Text>
 
       {/* Theme */}
       <Section label="Appearance">
@@ -94,6 +86,9 @@ const Settings = observer(function Settings() {
           {THEME_OPTIONS.map((opt) => (
             <Pressable
               key={opt}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: themePref === opt }}
+              accessibilityLabel={opt}
               onPress={() => onSelectTheme(opt)}
               style={[styles.segment, themePref === opt && styles.segmentActive]}>
               <Text style={[styles.segmentText, themePref === opt && styles.segmentTextActive]}>
@@ -221,23 +216,14 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     paddingHorizontal: theme.space.lg,
-    paddingTop: rt.insets.top + theme.space.sm,
-    paddingBottom: rt.insets.bottom + theme.space.xxxl,
+    paddingTop: rt.insets.top + theme.space.lg,
+    paddingBottom: rt.insets.bottom + 96,
     gap: theme.space.xl,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  back: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-  },
   title: {
-    fontSize: theme.font.heading,
-    fontWeight: theme.weight.semibold,
+    fontSize: theme.font.title,
+    fontWeight: theme.weight.bold,
+    letterSpacing: -0.5,
     color: theme.colors.textPrimary,
   },
   section: {
