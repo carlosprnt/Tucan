@@ -401,7 +401,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: theme.space.lg,
-    paddingTop: rt.insets.top + theme.space.sm,
+    paddingTop: theme.space.md,
     paddingBottom: theme.space.md,
   },
   headerTitle: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   fabBar: {
     paddingHorizontal: theme.space.lg,
     paddingTop: theme.space.sm,
-    paddingBottom: rt.insets.bottom + theme.space.sm,
+    paddingBottom: rt.insets.bottom + theme.space.lg,
     alignItems: 'flex-end',
   },
   nextFab: {
