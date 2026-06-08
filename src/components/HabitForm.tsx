@@ -687,7 +687,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   content: {
     paddingHorizontal: theme.space.lg,
     paddingBottom: rt.insets.bottom + theme.space.xxxl,
-    gap: theme.space.xl,
+    gap: theme.space.md,
   },
   fabBar: {
     position: 'absolute',
@@ -707,7 +707,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     opacity: 0.35,
   },
   field: {
-    gap: theme.space.sm,
+    gap: theme.space.md,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.space.lg,
   },
   fieldLabel: {
     fontSize: theme.font.caption,
@@ -719,7 +722,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   input: {
     fontSize: theme.font.body,
     color: theme.colors.textPrimary,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.canvas,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.md,
@@ -763,7 +766,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     justifyContent: 'center',
   },
   dayPillOff: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.canvas,
   },
   dayText: {
     fontSize: theme.font.body,
@@ -804,12 +807,12 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingRight: theme.space.lg,
   },
   viewMore: {
-    marginTop: theme.space.md,
+    marginTop: theme.space.xs,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: theme.space.md,
     borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.canvas,
   },
   viewMoreText: {
     fontSize: theme.font.body,
@@ -820,7 +823,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     width: 52,
     height: 52,
     borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.canvas,
     borderWidth: 2,
     borderColor: 'transparent',
     alignItems: 'center',
@@ -850,7 +853,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.canvas,
     borderRadius: theme.radius.md,
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.md,
