@@ -124,8 +124,8 @@ const HabitDetail = observer(function HabitDetail() {
 
 export default HabitDetail;
 
-const CELL = 9;
-const GAP = 5;
+const CELL = 18;
+const GAP = 8;
 
 function Accumulation({
   completed,
