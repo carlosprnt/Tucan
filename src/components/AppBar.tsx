@@ -244,8 +244,6 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.card,
-    borderWidth: 1,
-    borderColor: theme.colors.separator,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 16,
