@@ -184,7 +184,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   return (
     <View style={styles.section}>
       <Text style={styles.sectionLabel}>{label}</Text>
-      <View style={styles.sectionBody}>{children}</View>
+      {children}
     </View>
   );
 }
@@ -218,7 +218,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.space.lg,
     paddingTop: rt.insets.top + theme.space.lg,
     paddingBottom: rt.insets.bottom + 96,
-    gap: theme.space.xl,
+    gap: theme.space.md,
   },
   title: {
     fontSize: theme.font.title,
@@ -228,6 +228,10 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   section: {
     gap: theme.space.sm,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
   },
   sectionLabel: {
     fontSize: theme.font.caption,
@@ -235,12 +239,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  sectionBody: {
-    backgroundColor: theme.colors.card,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.space.lg,
-    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
@@ -261,7 +259,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   segmented: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.canvas,
     borderRadius: theme.radius.md,
     padding: 4,
     gap: 4,
@@ -273,14 +271,14 @@ const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'center',
   },
   segmentActive: {
-    backgroundColor: theme.colors.canvas,
+    backgroundColor: theme.colors.ink,
   },
   segmentText: {
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
   },
   segmentTextActive: {
-    color: theme.colors.textPrimary,
+    color: theme.colors.canvas,
     fontWeight: theme.weight.semibold,
   },
   note: {
