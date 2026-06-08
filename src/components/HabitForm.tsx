@@ -438,10 +438,19 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             </Animated.View>
           )}
 
-          {/* Button 2: Check (Step 2) */}
-          {!isEdit && step === 2 && (
+          {/* Button 2: Check (Step 2) - animates from center to bottom-right */}
+          {!isEdit && (
             <Animated.View
               style={{
+                position: 'absolute',
+                right: stepTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 20],
+                }),
+                bottom: stepTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 20],
+                }),
                 opacity: stepTransitionAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: [0, 1],
