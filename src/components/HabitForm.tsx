@@ -94,15 +94,24 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     haptics.selection();
     Keyboard.dismiss();
 
-    // Animate button transition
+    // Morph the FAB: arrow fades out, checkmark fades in.
     Animated.timing(stepTransitionAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
-    }).start(() => {
-      setStep(2);
-      // Don't reset animation - keep it at 1 for step 2
-    });
+    }).start();
+    setStep(2);
+  }
+
+  function goBack() {
+    haptics.selection();
+    // Morph the FAB back: checkmark fades out, arrow fades in.
+    Animated.timing(stepTransitionAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    setStep(1);
   }
 
   function toggleDay(i: number) {
@@ -186,7 +195,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             <Text style={styles.cancel}>Cancel</Text>
           </Pressable>
         ) : (
-          <Pressable hitSlop={10} onPress={() => (isEdit ? router.back() : setStep(1))}>
+          <Pressable hitSlop={10} onPress={() => (isEdit ? router.back() : goBack())}>
             {isEdit ? (
               <Text style={styles.cancel}>Cancel</Text>
             ) : (
