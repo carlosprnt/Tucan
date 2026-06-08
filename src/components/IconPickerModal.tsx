@@ -107,9 +107,10 @@ export function IconPickerModal({ visible, currentIcon, onSelect, onClose }: Ico
           />
         </View>
 
-        {/* Grid */}
-        {tab === 'symbols' ? (
+        {/* Grid - Symbols */}
+        {tab === 'symbols' && (
           <FlatList
+            key="symbols-grid"
             data={filteredSymbols}
             keyExtractor={(item) => item.key}
             numColumns={5}
@@ -133,8 +134,12 @@ export function IconPickerModal({ visible, currentIcon, onSelect, onClose }: Ico
               );
             }}
           />
-        ) : (
+        )}
+
+        {/* Grid - Emoji */}
+        {tab === 'emoji' && (
           <FlatList
+            key="emoji-grid"
             data={filteredEmojis}
             keyExtractor={(item, i) => `${item}-${i}`}
             numColumns={6}
