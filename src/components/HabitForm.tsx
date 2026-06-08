@@ -373,7 +373,11 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
         {/* Color */}
         <Field label="Color">
-          <View style={styles.colorRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.colorRow}>
             {HABIT_COLORS.map((opt) => {
               const selected = opt.value === color;
               const swatch = opt.value ?? theme.colors.ink;
@@ -397,7 +401,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
         </Field>
 
         {/* Start date */}
@@ -789,14 +793,13 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   colorRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: theme.space.md,
+    gap: theme.space.md,
+    paddingRight: theme.space.lg,
   },
   swatch: {
-    width: '13.5%',
-    aspectRatio: 1,
-    borderRadius: 999,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
