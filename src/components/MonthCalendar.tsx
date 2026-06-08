@@ -50,7 +50,9 @@ export function MonthCalendar({
 }: MonthCalendarProps) {
   const [width, setWidth] = useState(0);
 
-  const cellSize = width > 0 ? (width - GAP * 6) / 7 : 0;
+  // Floor so 7 cells + 6 gaps always fit on one row — otherwise pixel rounding
+  // can push the 7th column (Sunday) to wrap, leaving its column looking empty.
+  const cellSize = width > 0 ? Math.floor((width - GAP * 6) / 7) : 0;
   const glyphSize = cellSize * 0.62;
 
   // Monday-first: shift JS getDay() (0=Sun) so Monday = 0.
