@@ -4,7 +4,7 @@ import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
@@ -61,42 +61,62 @@ const HabitDetail = observer(function HabitDetail() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}>
-        <Header
-          title={habit.name}
-          onBack={() => router.back()}
-          onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
-        />
-
-        <View style={styles.stats}>
-          <Stat value={String(stats.total)} label="completed" />
-          <Stat value={`${stats.percent}%`} label="since start" />
-        </View>
-
-        {mode === 'month' ? (
-          <View style={styles.section}>
-            <Text style={styles.hint}>Tap any past day to fill it in.</Text>
-            {months.map(({ year, month }) => (
-              <View key={`${year}-${month}`} style={styles.monthBlock}>
-                <Text style={styles.monthLabel}>{monthLabel(year, month)}</Text>
-                <MonthCalendar
-                  year={year}
-                  month={month}
-                  completed={completed}
-                  startDate={habit.start_date}
-                  today={today}
-                  color={habit.color}
-                  activeDays={habit.active_days}
-                  animate={false}
-                  onToggleDay={(key) => toggleCompletion(habit.id, key)}
-                />
+      {mode === 'month' ? (
+        // Virtualized so long histories render only the visible months.
+        <FlatList
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          data={months}
+          keyExtractor={(m) => `${m.year}-${m.month}`}
+          initialNumToRender={2}
+          windowSize={5}
+          removeClippedSubviews
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Header
+                title={habit.name}
+                onBack={() => router.back()}
+                onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
+              />
+              <View style={styles.stats}>
+                <Stat value={String(stats.total)} label="completed" />
+                <Stat value={`${stats.percent}%`} label="since start" />
               </View>
-            ))}
+              <Text style={styles.hint}>Tap any past day to fill it in.</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.monthBlock}>
+              <Text style={styles.monthLabel}>{monthLabel(item.year, item.month)}</Text>
+              <MonthCalendar
+                year={item.year}
+                month={item.month}
+                completed={completed}
+                startDate={habit.start_date}
+                today={today}
+                color={habit.color}
+                activeDays={habit.active_days}
+                animate={false}
+                onToggleDay={(key) => toggleCompletion(habit.id, key)}
+              />
+            </View>
+          )}
+        />
+      ) : (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}>
+          <Header
+            title={habit.name}
+            onBack={() => router.back()}
+            onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
+          />
+          <View style={styles.stats}>
+            <Stat value={String(stats.total)} label="completed" />
+            <Stat value={`${stats.percent}%`} label="since start" />
           </View>
-        ) : (
           <Accumulation
             completed={completed}
             startDate={habit.start_date}
@@ -105,8 +125,8 @@ const HabitDetail = observer(function HabitDetail() {
             percent={stats.percent}
             accent={accent}
           />
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 });
@@ -230,6 +250,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.space.lg,
     paddingTop: rt.insets.top + theme.space.sm,
     paddingBottom: rt.insets.bottom + 110,
+    gap: theme.space.xl,
+  },
+  listHeader: {
     gap: theme.space.xl,
   },
   headerRow: {
