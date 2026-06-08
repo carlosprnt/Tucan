@@ -146,7 +146,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const quickIcons: (SFSymbol | string)[] = [
     icon,
     ...HABIT_ICON_SUGGESTIONS.map((o) => o.key).filter((k) => k !== icon),
-  ].slice(0, 16);
+  ].slice(0, 18);
 
   function pickSuggestion(s: { name: string; icon: SFSymbol }) {
     haptics.selection();
@@ -786,12 +786,13 @@ const styles = StyleSheet.create((theme, rt) => ({
   colorRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: theme.space.md,
+    justifyContent: 'space-between',
+    rowGap: theme.space.md,
   },
   swatch: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: '13.5%',
+    aspectRatio: 1,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
