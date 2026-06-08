@@ -327,7 +327,11 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
         {/* Icon */}
         <Field label="Icon">
-          <View style={styles.iconRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.iconRow}>
             {quickIcons.map((key) => {
               const selected = key === icon;
               return (
@@ -353,7 +357,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           <Pressable
             accessibilityRole="button"
@@ -754,19 +758,19 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   iconRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: theme.space.sm,
+    paddingRight: theme.space.lg,
   },
   viewMore: {
     marginTop: theme.space.md,
-    alignSelf: 'flex-start',
-    paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.lg,
-    borderRadius: theme.radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.space.md,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.card,
   },
   viewMoreText: {
-    fontSize: theme.font.caption,
+    fontSize: theme.font.body,
     fontWeight: theme.weight.semibold,
     color: theme.colors.textPrimary,
   },
