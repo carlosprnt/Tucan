@@ -52,6 +52,11 @@ export function createHabit(input: NewHabitInput): string {
   if (!userId) return '';
   const id = uuidv4();
   const now = new Date().toISOString();
+  // New habits appear at the top: use minimum sort_order - 1
+  const existingHabits = listHabits();
+  const minSortOrder = existingHabits.length > 0
+    ? Math.min(...existingHabits.map((h) => h.sort_order))
+    : 0;
   const row: Habit = {
     id,
     user_id: userId,
@@ -61,7 +66,7 @@ export function createHabit(input: NewHabitInput): string {
     color: input.color ?? null,
     start_date: input.start_date ?? todayKey(),
     active_days: input.active_days ?? ALL_DAYS,
-    sort_order: listHabits().length,
+    sort_order: minSortOrder - 1,
     archived_at: null,
     created_at: now,
     updated_at: now,

@@ -372,19 +372,24 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       </ScrollView>
       </KeyboardAvoidingView>
 
-      {onStep1 && (
+      {(onStep1 || !isEdit) && (
         <View style={[styles.fabBar, { bottom: Math.max(keyboardHeight, 0) + 20 }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Next"
+            accessibilityLabel={onStep1 ? 'Next' : 'Save'}
             disabled={!canSave}
-            onPress={goNext}
+            onPress={onStep1 ? goNext : onSave}
             style={({ pressed }) => [
               styles.nextFab,
               !canSave && styles.nextFabDisabled,
               pressed && styles.pressed,
             ]}>
-            <SymbolView name="arrow.right" size={26} weight="bold" tintColor={theme.colors.canvas} />
+            <SymbolView
+              name={onStep1 ? 'arrow.right' : 'checkmark'}
+              size={26}
+              weight="bold"
+              tintColor={theme.colors.canvas}
+            />
           </Pressable>
         </View>
       )}
