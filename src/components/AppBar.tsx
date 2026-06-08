@@ -42,10 +42,10 @@ export const AppBar = observer(function AppBar() {
   const router = useRouter();
   const { theme, rt } = useUnistyles();
 
-  // Hidden over the create/edit sheet.
-  if (pathname === '/habit/new') return null;
-
-  const isDetail = pathname.startsWith('/habit/');
+  // Over the create/edit sheet, keep the main bar mounted behind it so the
+  // bottom nav stays visible as the sheet is swiped away (no flash/disappear).
+  const isCreate = pathname === '/habit/new';
+  const isDetail = pathname.startsWith('/habit/') && !isCreate;
 
   // Detail bar is a bit smaller and tighter.
   const barPadding = isDetail ? theme.space.xs : theme.space.sm;
