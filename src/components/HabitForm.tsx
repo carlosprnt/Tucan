@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { IconPickerModal } from '@/components/IconPickerModal';
+import { IconColorPickerModal } from '@/components/IconColorPickerModal';
 import { ALL_DAYS, fromDateKey, toDateKey, todayKey, type DateKey } from '@/lib/date';
 import { HABIT_COLORS } from '@/lib/colors';
 import { haptics } from '@/lib/haptics';
@@ -53,7 +53,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [startDate, setStartDate] = useState<DateKey>(existing?.start_date ?? todayKey());
   const [activeDays, setActiveDays] = useState(existing?.active_days ?? ALL_DAYS);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -276,7 +276,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               accessibilityLabel="Show all icons"
               onPress={() => {
                 haptics.selection();
-                setShowIconPicker(true);
+                setShowIconColorPicker(true);
               }}
               style={styles.iconCell}>
               <SymbolView
@@ -392,15 +392,16 @@ export function HabitForm({ habitId }: { habitId?: string }) {
         </View>
       )}
 
-      <IconPickerModal
-        visible={showIconPicker}
+      <IconColorPickerModal
+        visible={showIconColorPicker}
         currentIcon={icon}
-        onSelect={(selected) => {
+        currentColor={color}
+        onSelect={(selectedIcon, selectedColor) => {
           haptics.selection();
-          setIcon(selected);
-          setShowIconPicker(false);
+          setIcon(selectedIcon);
+          setColor(selectedColor);
         }}
-        onClose={() => setShowIconPicker(false)}
+        onClose={() => setShowIconColorPicker(false)}
       />
     </View>
   );
