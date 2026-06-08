@@ -28,7 +28,7 @@ export const SparkleBurst = forwardRef<SparkleBurstHandle, { color?: string | nu
   function SparkleBurst({ color }, ref) {
     const { theme } = useUnistyles();
     const p = useSharedValue(1); // 1 = finished/hidden
-    const tint = color ?? theme.colors.accent;
+    const tint = color ?? theme.colors.dotDone;
 
     useImperativeHandle(
       ref,
