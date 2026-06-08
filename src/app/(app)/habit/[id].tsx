@@ -228,8 +228,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     flex: 1,
     textAlign: 'left',
     marginLeft: theme.space.xl,
-    fontSize: theme.font.heading,
+    fontSize: theme.font.title,
     fontWeight: theme.weight.bold,
+    letterSpacing: -0.5,
     color: theme.colors.textPrimary,
   },
   iconBtn: {
