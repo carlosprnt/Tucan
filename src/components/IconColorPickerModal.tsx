@@ -266,8 +266,13 @@ export function IconColorPickerModal({
   onClose,
 }: IconColorPickerModalProps) {
   const { theme } = useUnistyles();
+  // Initialized from the form's current icon. The parent remounts this via a
+  // `key` each time it opens, so these pick up the latest selection and land on
+  // the matching tab — keeping the icon previewed/highlighted.
   const [selectedIcon, setSelectedIcon] = useState<SFSymbol | string>(currentIcon);
-  const [tab, setTab] = useState<Tab>('emojis');
+  const [tab, setTab] = useState<Tab>(() =>
+    /\p{Extended_Pictographic}/u.test(currentIcon) ? 'emojis' : 'icons',
+  );
   const [search, setSearch] = useState('');
 
   const q = search.trim().toLowerCase();

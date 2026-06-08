@@ -622,6 +622,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       )}
 
       <IconColorPickerModal
+        key={showIconColorPicker ? `open-${icon}` : 'closed'}
         visible={showIconColorPicker}
         currentIcon={icon}
         onSelect={(selectedIcon) => {
