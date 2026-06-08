@@ -2,7 +2,7 @@ import { observer } from '@legendapp/state/react';
 import { usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -69,18 +69,22 @@ export const AppBar = observer(function AppBar() {
           }}
         />
 
-        <Item
+        <Pressable
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={mode === 'month' ? 'Calendar view' : 'Total view'}
           onPress={() => {
             haptics.selection();
             detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month');
           }}
-          label={mode === 'month' ? 'Show all time' : 'Show month'}>
+          style={({ pressed }) => [styles.viewToggle, pressed && styles.pressed]}>
           <SymbolView
             name={mode === 'month' ? 'calendar' : 'square.grid.3x3.fill'}
             size={24}
             tintColor={theme.colors.textPrimary}
           />
-        </Item>
+          <Text style={styles.viewToggleLabel}>{mode === 'month' ? 'Calendar' : 'Total'}</Text>
+        </Pressable>
       </>
     );
   };
@@ -182,29 +186,6 @@ function RoundButton({
   );
 }
 
-function Item({
-  onPress,
-  label,
-  selected,
-  children,
-}: {
-  onPress: () => void;
-  label: string;
-  selected?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Pressable
-      hitSlop={8}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected }}
-      style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
-      {children}
-    </Pressable>
-  );
-}
 
 function Fab({
   onPress,
@@ -289,11 +270,17 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  item: {
-    width: 44,
-    height: 44,
+  viewToggle: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: theme.space.xs,
+    height: 44,
+    paddingHorizontal: theme.space.sm,
+  },
+  viewToggleLabel: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.textPrimary,
   },
   fab: {
     width: 64,
