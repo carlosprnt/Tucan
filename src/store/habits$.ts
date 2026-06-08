@@ -44,6 +44,8 @@ export interface NewHabitInput {
   color?: string | null;
   start_date?: string;
   active_days?: number;
+  reminder_enabled?: boolean;
+  reminder_time?: string | null;
 }
 
 /** Optimistically create a habit (synced in the background). Returns its id, or '' if signed out. */
@@ -66,6 +68,8 @@ export function createHabit(input: NewHabitInput): string {
     color: input.color ?? null,
     start_date: input.start_date ?? todayKey(),
     active_days: input.active_days ?? ALL_DAYS,
+    reminder_enabled: input.reminder_enabled ?? false,
+    reminder_time: input.reminder_time ?? null,
     sort_order: minSortOrder - 1,
     archived_at: null,
     created_at: now,
@@ -79,7 +83,15 @@ export function createHabit(input: NewHabitInput): string {
 export type HabitPatch = Partial<
   Pick<
     Habit,
-    'name' | 'description' | 'icon' | 'color' | 'start_date' | 'sort_order' | 'active_days'
+    | 'name'
+    | 'description'
+    | 'icon'
+    | 'color'
+    | 'start_date'
+    | 'sort_order'
+    | 'active_days'
+    | 'reminder_enabled'
+    | 'reminder_time'
   >
 >;
 

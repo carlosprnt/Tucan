@@ -63,6 +63,8 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          reminder_enabled: boolean
+          reminder_time: string | null
           sort_order: number
           start_date: string
           updated_at: string
@@ -78,6 +80,8 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
+          reminder_enabled?: boolean
+          reminder_time?: string | null
           sort_order?: number
           start_date: string
           updated_at?: string
@@ -93,6 +97,8 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+          reminder_enabled?: boolean
+          reminder_time?: string | null
           sort_order?: number
           start_date?: string
           updated_at?: string

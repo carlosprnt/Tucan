@@ -105,6 +105,8 @@ function seedPreview(): void {
       color: d.color,
       start_date: startDate,
       active_days: d.activeDays,
+      reminder_enabled: false,
+      reminder_time: null,
       sort_order: idx,
       archived_at: null,
       created_at: now,

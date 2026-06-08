@@ -22,27 +22,61 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return status === 'granted';
 }
 
+/** A habit's reminder settings, as needed to schedule its notifications. */
+export interface HabitReminder {
+  name: string;
+  reminderEnabled: boolean;
+  reminderTime: string | null; // local 'HH:MM:SS'
+  activeDays: number; // bitmask, bit0=Mon … bit6=Sun
+}
+
+// Map our Monday-first bit index (0=Mon…6=Sun) to expo's weekday (1=Sun…7=Sat).
+const WEEKDAY_FOR_BIT = [2, 3, 4, 5, 6, 7, 1];
+
+function parseTime(time: string | null, fallback = '09:00:00'): [number, number] {
+  const [hour, minute] = (time ?? fallback).split(':').map(Number);
+  return [hour, minute];
+}
+
 /**
- * Re-apply the single daily reminder from the saved preference. Never prompts —
- * if permission isn't granted yet, it just clears any schedule.
+ * Re-apply every scheduled reminder from saved state — the global daily nudge
+ * plus a per-habit reminder on each of the habit's active weekdays. Never
+ * prompts; if permission isn't granted it just clears the schedule.
  */
-export async function rescheduleReminder(
-  enabled: boolean,
-  time: string | null,
+export async function rescheduleAllReminders(
+  global: { enabled: boolean; time: string | null },
+  habits: HabitReminder[],
 ): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
-  if (!enabled || !(await hasPermission())) return;
+  if (!(await hasPermission())) return;
 
-  const [hour, minute] = (time ?? '09:00:00').split(':').map(Number);
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Tucan',
-      body: 'Time to check in on your habits.',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
-    },
-  });
+  // Global daily nudge (from Settings).
+  if (global.enabled) {
+    const [hour, minute] = parseTime(global.time);
+    await Notifications.scheduleNotificationAsync({
+      content: { title: 'Tucan', body: 'Time to check in on your habits.' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute },
+    });
+  }
+
+  // Per-habit reminders, one weekly trigger per active day.
+  for (const habit of habits) {
+    if (!habit.reminderEnabled || !habit.reminderTime) continue;
+    const [hour, minute] = parseTime(habit.reminderTime);
+    for (let bit = 0; bit < 7; bit++) {
+      if (((habit.activeDays >> bit) & 1) !== 1) continue;
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: habit.name,
+          body: `Did you do "${habit.name}" today? Mark it done.`,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+          weekday: WEEKDAY_FOR_BIT[bit],
+          hour,
+          minute,
+        },
+      });
+    }
+  }
 }

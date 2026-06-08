@@ -13,6 +13,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   TextInput,
   View,
@@ -23,6 +24,7 @@ import { IconColorPickerModal } from '@/components/IconColorPickerModal';
 import { ALL_DAYS, fromDateKey, toDateKey, todayKey, type DateKey } from '@/lib/date';
 import { HABIT_COLORS } from '@/lib/colors';
 import { haptics } from '@/lib/haptics';
+import { requestNotificationPermission } from '@/lib/notifications';
 import {
   HABIT_ICON_SUGGESTIONS,
   HABIT_NAME_SUGGESTIONS,
@@ -57,7 +59,10 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [color, setColor] = useState<string | null>(existing?.color ?? null);
   const [startDate, setStartDate] = useState<DateKey>(existing?.start_date ?? todayKey());
   const [activeDays, setActiveDays] = useState(existing?.active_days ?? ALL_DAYS);
+  const [reminderEnabled, setReminderEnabled] = useState(existing?.reminder_enabled ?? false);
+  const [reminderTime, setReminderTime] = useState<string | null>(existing?.reminder_time ?? null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [stepTransitionAnim] = useState(() => new Animated.Value(0));
@@ -167,6 +172,27 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     if (date) setStartDate(toDateKey(date));
   }
 
+  async function onToggleReminder(value: boolean) {
+    haptics.light();
+    if (value) {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        Alert.alert(
+          'Notifications are off',
+          'Turn on notifications for Tucan in iOS Settings to get habit reminders.',
+        );
+        return; // don't show it as on when it can't fire
+      }
+      setReminderTime((t) => t ?? '09:00:00'); // sensible default time
+    }
+    setReminderEnabled(value);
+  }
+
+  function onReminderTimeChange(_event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS !== 'ios') setShowReminderPicker(false);
+    if (date) setReminderTime(dateToTime(date));
+  }
+
   function onSave() {
     if (!canSave) return;
     const payload = {
@@ -176,6 +202,8 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       color,
       start_date: startDate,
       active_days: activeDays,
+      reminder_enabled: reminderEnabled,
+      reminder_time: reminderEnabled ? (reminderTime ?? '09:00:00') : reminderTime,
     };
     if (isEdit && habitId) {
       updateHabit(habitId, payload);
@@ -409,6 +437,40 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           <Text style={styles.daysHint}>Tap to turn days off — they won&apos;t count.</Text>
         </Field>
 
+        {/* Reminder */}
+        <Field label="Reminder">
+          <View style={styles.reminderRow}>
+            <Text style={styles.reminderLabel}>Remind me to check in</Text>
+            <Switch
+              value={reminderEnabled}
+              onValueChange={onToggleReminder}
+              trackColor={{ true: theme.colors.ink, false: theme.colors.separator }}
+            />
+          </View>
+          {reminderEnabled && (
+            <>
+              <Pressable
+                style={({ pressed }) => [styles.dateButton, pressed && styles.pressed]}
+                onPress={() => setShowReminderPicker((s) => !s)}>
+                <Text style={styles.dateText}>{formatTime(reminderTime)}</Text>
+                <SymbolView name="clock" size={18} tintColor={theme.colors.textSecondary} />
+              </Pressable>
+              {showReminderPicker && (
+                <DateTimePicker
+                  value={timeToDate(reminderTime)}
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={onReminderTimeChange}
+                  accentColor={accent}
+                />
+              )}
+              <Text style={styles.daysHint}>
+                We&apos;ll nudge you on your active days at this time.
+              </Text>
+            </>
+          )}
+        </Field>
+
             {isEdit && (
               <Pressable
                 style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
@@ -516,6 +578,27 @@ function formatDate(key: DateKey): string {
     month: 'long',
     day: 'numeric',
   });
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function timeToDate(t?: string | null): Date {
+  const d = new Date();
+  if (t) {
+    const [h, m] = t.split(':').map(Number);
+    d.setHours(h, m, 0, 0);
+  } else {
+    d.setHours(9, 0, 0, 0);
+  }
+  return d;
+}
+
+function dateToTime(d: Date): string {
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+}
+
+function formatTime(t?: string | null): string {
+  return timeToDate(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
@@ -644,6 +727,16 @@ const styles = StyleSheet.create((theme, rt) => ({
   daysHint: {
     fontSize: theme.font.caption,
     color: theme.colors.textMuted,
+  },
+  reminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 32,
+  },
+  reminderLabel: {
+    fontSize: theme.font.body,
+    color: theme.colors.textPrimary,
   },
   chip: {
     flexDirection: 'row',

@@ -8,9 +8,9 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native-unistyles';
 
-import { rescheduleReminder } from '@/lib/notifications';
+import { rescheduleAllReminders } from '@/lib/notifications';
 import { applyThemePref } from '@/lib/theme-control';
-import { auth$, currentProfile, initStore, type ThemePref } from '@/store';
+import { auth$, currentProfile, initStore, listHabits, type ThemePref } from '@/store';
 
 export default function RootLayout() {
   return (
@@ -29,8 +29,16 @@ function RootNavigator() {
   const themePref = use$(
     () => (currentProfile()?.theme_pref as ThemePref | undefined) ?? 'auto',
   );
-  const reminderEnabled = use$(() => currentProfile()?.reminder_enabled ?? false);
-  const reminderTime = use$(() => currentProfile()?.reminder_time ?? null);
+  // A signature that changes whenever any reminder-relevant value changes:
+  // the global daily reminder, or any habit's reminder/active-days/name.
+  const reminderKey = use$(() => {
+    const profile = currentProfile();
+    const habits = listHabits();
+    return JSON.stringify({
+      g: [profile?.reminder_enabled ?? false, profile?.reminder_time ?? null],
+      h: habits.map((h) => [h.name, h.reminder_enabled, h.reminder_time, h.active_days]),
+    });
+  });
 
   useEffect(() => {
     initStore();
@@ -41,10 +49,20 @@ function RootNavigator() {
     applyThemePref(themePref);
   }, [themePref]);
 
-  // Re-apply the daily reminder whenever the saved preference changes.
+  // Re-apply the global + per-habit reminders whenever any of them changes.
   useEffect(() => {
-    void rescheduleReminder(reminderEnabled, reminderTime);
-  }, [reminderEnabled, reminderTime]);
+    const profile = currentProfile();
+    const habits = listHabits().map((h) => ({
+      name: h.name,
+      reminderEnabled: h.reminder_enabled,
+      reminderTime: h.reminder_time,
+      activeDays: h.active_days,
+    }));
+    void rescheduleAllReminders(
+      { enabled: profile?.reminder_enabled ?? false, time: profile?.reminder_time ?? null },
+      habits,
+    );
+  }, [reminderKey]);
 
   useEffect(() => {
     if (initializing) return;
