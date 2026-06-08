@@ -1,9 +1,9 @@
 import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -48,6 +48,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function HabitForm({ habitId }: { habitId?: string }) {
   const router = useRouter();
+  const navigation = useNavigation();
   const { theme } = useUnistyles();
 
   const existing = habitId ? getHabit(habitId) : undefined;
@@ -105,6 +106,56 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
   // Two-step create: step 1 is just the name; edit shows everything at once.
   const onStep1 = !isEdit && step === 1;
+
+  // Whether there are unsaved changes worth confirming before dismissing.
+  const dirty = isEdit
+    ? name.trim() !== existing.name ||
+      (description.trim() || null) !== (existing.description ?? null) ||
+      icon !== habitIcon(existing.icon) ||
+      color !== (existing.color ?? null) ||
+      startDate !== existing.start_date ||
+      activeDays !== existing.active_days ||
+      reminderEnabled !== existing.reminder_enabled ||
+      (reminderTime ?? null) !== (existing.reminder_time ?? null)
+    : name.trim() !== '' ||
+      description.trim() !== '' ||
+      color !== null ||
+      icon !== habitIcon(undefined) ||
+      reminderEnabled ||
+      activeDays !== ALL_DAYS ||
+      startDate !== todayKey() ||
+      step === 2;
+
+  // Keep the latest dirtiness readable from the navigation listener without
+  // re-subscribing each keystroke. `saved` skips the prompt after a save/delete.
+  const dirtyRef = useRef(dirty);
+  const savedRef = useRef(false);
+  useEffect(() => {
+    dirtyRef.current = dirty;
+  });
+
+  // Confirm before discarding via the swipe-down sheet, back gesture, or
+  // the Cancel button. Allow it freely once saved/deleted or when untouched.
+  useEffect(() => {
+    const sub = navigation.addListener('beforeRemove', (e) => {
+      if (savedRef.current || !dirtyRef.current) return;
+      e.preventDefault();
+      haptics.warning();
+      Alert.alert(
+        isEdit ? 'Discard changes?' : 'Discard this habit?',
+        "If you leave now, your changes won't be saved.",
+        [
+          { text: 'Keep editing', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+        ],
+      );
+    });
+    return sub;
+  }, [navigation, isEdit]);
 
   // Snappy icon morph (arrow <-> check). Ease-out so it resolves quickly and
   // feels coupled to the keyboard rather than dragging behind it.
@@ -211,6 +262,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     } else {
       createHabit(payload);
     }
+    savedRef.current = true; // skip the discard prompt on the way out
     haptics.success();
     router.back();
   }
@@ -224,6 +276,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
+          savedRef.current = true; // skip the discard prompt on the way out
           deleteHabit(habitId);
           router.dismissAll();
         },
