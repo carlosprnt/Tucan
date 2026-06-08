@@ -7,6 +7,7 @@ import { useState } from 'react';
 import {
   Alert,
   Animated,
+  Easing,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -61,28 +62,28 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   // Two-step create: step 1 is just the name; edit shows everything at once.
   const onStep1 = !isEdit && step === 1;
 
+  // Snappy icon morph (arrow <-> check). Ease-out so it resolves quickly and
+  // feels coupled to the keyboard rather than dragging behind it.
+  function morphFab(to: 0 | 1) {
+    Animated.timing(stepTransitionAnim, {
+      toValue: to,
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }
+
   function goNext() {
     if (!canSave) return;
     haptics.selection();
     Keyboard.dismiss();
-
-    // Morph the FAB: arrow fades out, checkmark fades in.
-    Animated.timing(stepTransitionAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    morphFab(1);
     setStep(2);
   }
 
   function goBack() {
     haptics.selection();
-    // Morph the FAB back: checkmark fades out, arrow fades in.
-    Animated.timing(stepTransitionAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    morphFab(0);
     setStep(1);
   }
 
