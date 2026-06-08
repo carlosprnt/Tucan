@@ -136,10 +136,11 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.header}>
         {onStep1 ? (
           <Pressable hitSlop={10} onPress={() => router.back()}>
             <Text style={styles.cancel}>Cancel</Text>
@@ -353,6 +354,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {onStep1 && (
         <View style={styles.fabBar}>
@@ -370,7 +372,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           </Pressable>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -392,16 +394,20 @@ function formatDate(key: DateKey): string {
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
-  flex: {
+  container: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
+    position: 'relative',
+  },
+  flex: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: theme.space.lg,
-    paddingTop: theme.space.md,
+    paddingTop: 40,
     paddingBottom: theme.space.md,
   },
   headerTitle: {
@@ -430,10 +436,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.space.xl,
   },
   fabBar: {
-    paddingHorizontal: theme.space.lg,
-    paddingTop: theme.space.sm,
-    paddingBottom: rt.insets.bottom + theme.space.lg,
-    alignItems: 'flex-end',
+    position: 'absolute',
+    right: 20,
+    bottom: rt.insets.bottom + 20,
+    zIndex: 10,
   },
   nextFab: {
     width: 56,
