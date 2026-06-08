@@ -3,6 +3,7 @@ import '@/theme/unistyles';
 import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { PencilSimple } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -155,7 +156,7 @@ function MonthScroll({
               onToggleDay={(key) => toggleCompletion(habit.id, key)}
             />
           ) : (
-            <View style={styles.monthSkeleton} />
+            <MonthSkeleton />
           )}
         </View>
       ))}
@@ -165,6 +166,37 @@ function MonthScroll({
 
 const CELL = 18;
 const GAP = 8;
+
+const WEEKDAY_COUNT = 7;
+const SKELETON_ROWS = 6;
+
+/** Placeholder matching the calendar grid: a faint dot per day-cell hole. */
+function MonthSkeleton() {
+  const [width, setWidth] = useState(0);
+  const cellSize = width > 0 ? Math.floor((width - GAP * (WEEKDAY_COUNT - 1)) / WEEKDAY_COUNT) : 0;
+  const dot = Math.max(6, Math.round(cellSize * 0.5));
+
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <View style={[styles.skeletonRow, { gap: GAP, marginBottom: GAP }]}>
+        {Array.from({ length: WEEKDAY_COUNT }).map((_, i) => (
+          <View key={i} style={{ width: cellSize, alignItems: 'center' }}>
+            <View style={styles.skeletonWeekBar} />
+          </View>
+        ))}
+      </View>
+      {width > 0 && (
+        <View style={[styles.skeletonGrid, { gap: GAP }]}>
+          {Array.from({ length: WEEKDAY_COUNT * SKELETON_ROWS }).map((_, i) => (
+            <View key={i} style={{ width: cellSize, height: cellSize, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={[styles.skeletonDot, { width: dot, height: dot, borderRadius: dot / 2 }]} />
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function Accumulation({
   completed,
@@ -220,7 +252,7 @@ function Header({
       </Text>
       {onEdit ? (
         <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
-          <SymbolView name="pencil" size={24} weight="bold" tintColor={theme.colors.textPrimary} />
+          <PencilSimple size={24} weight="bold" color={theme.colors.textPrimary} />
         </Pressable>
       ) : (
         <View style={styles.iconBtn} />
@@ -323,11 +355,21 @@ const styles = StyleSheet.create((theme, rt) => ({
   monthBlock: {
     gap: theme.space.md,
   },
-  monthSkeleton: {
-    height: 280,
-    borderRadius: theme.radius.lg,
+  skeletonRow: {
+    flexDirection: 'row',
+  },
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  skeletonWeekBar: {
+    width: 10,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: theme.colors.card,
-    opacity: 0.5,
+  },
+  skeletonDot: {
+    backgroundColor: theme.colors.card,
   },
   monthLabel: {
     fontSize: theme.font.heading,
