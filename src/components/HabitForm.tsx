@@ -134,8 +134,15 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     dirtyRef.current = dirty;
   });
 
-  // Confirm before discarding via the swipe-down sheet, back gesture, or
-  // the Cancel button. Allow it freely once saved/deleted or when untouched.
+  // Block the native swipe-to-dismiss while there are unsaved changes, so the
+  // sheet can't slip away and lose work; beforeRemove handles button/back. When
+  // clean, allow the swipe to close freely.
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !dirty });
+  }, [navigation, dirty]);
+
+  // Confirm before discarding via the back/Cancel actions. Allow it freely once
+  // saved/deleted or when untouched.
   useEffect(() => {
     const sub = navigation.addListener('beforeRemove', (e) => {
       if (savedRef.current || !dirtyRef.current) return;
