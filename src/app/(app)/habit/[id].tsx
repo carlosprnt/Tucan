@@ -69,12 +69,20 @@ const HabitDetail = observer(function HabitDetail() {
           showsVerticalScrollIndicator={false}
           data={months}
           keyExtractor={(m) => `${m.year}-${m.month}`}
-          initialNumToRender={2}
+          // Paint the current month first, then stream older months in one at a
+          // time so entering a habit is instant (no blank seconds).
+          initialNumToRender={1}
+          maxToRenderPerBatch={1}
+          updateCellsBatchingPeriod={40}
           windowSize={5}
           removeClippedSubviews
           ListHeaderComponent={
             <View style={styles.listHeader}>
-              <Header title={habit.name} onBack={() => router.back()} />
+              <Header
+                title={habit.name}
+                onBack={() => router.back()}
+                onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
+              />
               <Summary total={stats.total} percent={stats.percent} />
               <Text style={styles.hint}>Tap any past day to fill it in.</Text>
             </View>
@@ -101,7 +109,11 @@ const HabitDetail = observer(function HabitDetail() {
           style={styles.container}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-          <Header title={habit.name} onBack={() => router.back()} />
+          <Header
+            title={habit.name}
+            onBack={() => router.back()}
+            onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
+          />
           <Summary total={stats.total} percent={stats.percent} />
           <Accumulation
             completed={completed}
@@ -175,7 +187,7 @@ function Header({
       </Text>
       {onEdit ? (
         <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
-          <SymbolView name="square.and.pencil" size={22} weight="semibold" tintColor={theme.colors.textPrimary} />
+          <SymbolView name="pencil" size={24} weight="bold" tintColor={theme.colors.textPrimary} />
         </Pressable>
       ) : (
         <View style={styles.iconBtn} />
