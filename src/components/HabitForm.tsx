@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { IconPickerModal } from '@/components/IconPickerModal';
 import { ALL_DAYS, fromDateKey, toDateKey, todayKey, type DateKey } from '@/lib/date';
 import { HABIT_COLORS } from '@/lib/colors';
 import { haptics } from '@/lib/haptics';
@@ -52,7 +53,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [startDate, setStartDate] = useState<DateKey>(existing?.start_date ?? todayKey());
   const [activeDays, setActiveDays] = useState(existing?.active_days ?? ALL_DAYS);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [iconsExpanded, setIconsExpanded] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -248,10 +249,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
         {/* Icon */}
         <Field label="Icon">
           <View style={styles.iconRow}>
-            {(iconsExpanded
-              ? HABIT_ICON_SUGGESTIONS
-              : HABIT_ICON_SUGGESTIONS.slice(0, 9)
-            ).map((opt) => {
+            {HABIT_ICON_SUGGESTIONS.slice(0, 9).map((opt) => {
               const selected = opt.key === icon;
               return (
                 <Pressable
@@ -275,14 +273,14 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={iconsExpanded ? 'Show fewer icons' : 'Show more icons'}
+              accessibilityLabel="Show all icons"
               onPress={() => {
                 haptics.selection();
-                setIconsExpanded((e) => !e);
+                setShowIconPicker(true);
               }}
               style={styles.iconCell}>
               <SymbolView
-                name={iconsExpanded ? 'chevron.up' : 'ellipsis'}
+                name="ellipsis"
                 size={20}
                 tintColor={theme.colors.textSecondary}
               />
@@ -393,6 +391,17 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           </Pressable>
         </View>
       )}
+
+      <IconPickerModal
+        visible={showIconPicker}
+        currentIcon={icon}
+        onSelect={(selected) => {
+          haptics.selection();
+          setIcon(selected as SFSymbol);
+          setShowIconPicker(false);
+        }}
+        onClose={() => setShowIconPicker(false)}
+      />
     </View>
   );
 }
