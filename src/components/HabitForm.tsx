@@ -466,11 +466,9 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       <IconColorPickerModal
         visible={showIconColorPicker}
         currentIcon={icon}
-        currentColor={color}
-        onSelect={(selectedIcon, selectedColor) => {
+        onSelect={(selectedIcon) => {
           haptics.selection();
           setIcon(selectedIcon);
-          setColor(selectedColor);
         }}
         onClose={() => setShowIconColorPicker(false)}
       />

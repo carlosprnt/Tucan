@@ -6,48 +6,96 @@ import {
   Pressable,
   SafeAreaView,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { HABIT_COLORS } from '@/lib/colors';
+import { HABIT_ICON_SUGGESTIONS } from '@/lib/icons';
 import { haptics } from '@/lib/haptics';
 
-const EMOJI_CATEGORIES = {
-  smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😌', '😔', '😑', '😐', '😶', '😏', '😒', '🙁', '☹️', '😲', '😞', '😖', '😢', '😭', '😤', '😠', '😡', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖'],
-  nature: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🧀', '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥑', '🍆', '🍅', '🌶️', '🌽', '🥒', '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰', '🍞', '🥐', '🥖', '🥨', '🥯', '🥞', '🧇', '🥚', '🍳', '🧈', '🥞', '🥓', '🥞', '🍖', '🍗', '🌭', '🍔', '🍟', '🍕', '🥪', '🥙', '🧆', '🌮', '🌯', '🥗', '🥘', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🍰', '🎂', '🧁', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🍯', '🥛', '🥤', '☕', '🍵', '🍶', '🍾', '🍷', '🍸', '🍹', '🍺', '🍻', '🥂', '🥃'],
-  activity: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎳', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '⛸️', '🎣', '🎽', '🎿', '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🤾', '🏌️', '🏇', '🧘', '🏄', '🏊', '🤽', '🚣', '🚴', '🚵', '🎯', '🪀', '🪃', '🎣', '🎪', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🥁', '🎷', '🎺', '🎸', '🎻', '🎲', '🧩', '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🏎️', '🛵', '🦯', '🦽', '🦼', '🛺', '🚲', '🛴', '🛹', '🛼', '🚏', '⛽', '🚨', '🚔', '🚍', '🚘', '🚖', '🚡', '🚠', '🚟', '🚃', '🚋', '🚞', '🚝', '🚄', '🚅', '🚈', '🚂', '🚆', '🚇', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '💺', '🛰️', '🚁', '🛶', '⛵', '🚤', '🛳️', '🛲', '🚢', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🔩', '⚙️', '🧱', '⛓️', '🧲', '🔫', '💣', '🔪', '🗡️', '🛡️', '🚬', '⚰️', '⚱️', '🏺', '🔮', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '🧮', '🎥', '🎬', '📺', '📷', '📸', '📹', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⌚', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '💰', '💳', '🧾', '✉️', '📩', '📨', '📤', '📥', '📦', '🏷️', '🧧', '📪', '📫', '📬', '📭', '📮', '✏️', '✒️', '🖋️', '🖊️', '🖌️', '🖍️', '📝', '📁', '📂', '📅', '📆', '🗒️', '🗃️', '🗳️', '🗄️', '📋', '📇', '📈', '📉', '📊', '📓', '📔', '📒', '📕', '📖', '📗', '📘', '📙', '📚', '📞', '📖', '🧷', '🧷', '🧹', '🧺', '🧻', '🧼', '🧽', '🧯', '🛒', '🚬', '⚰️', '⚱️'],
-  food: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥑', '🍆', '🍅', '🌶️', '🌽', '🥒', '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰', '🍞', '🥐', '🥖', '🥨', '🥯', '🥞', '🧇', '🥚', '🍳', '🧈', '🥞', '🥓', '🍗', '🌭', '🍔', '🍟', '🍕', '🥪', '🥙', '🧆', '🌮', '🌯', '🥗', '🥘', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🍰', '🎂', '🧁', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🍯', '🥛', '🥤', '☕', '🍵', '🍶', '🍾', '🍷', '🍸', '🍹', '🍺', '🍻'],
-  symbols: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🤜', '🤛', '🦾', '🦿', '👂', '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅', '👄', '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒'],
+// Emojis grouped by a search keyword (used so the search box can match them
+// even though individual emojis don't carry names). Flattened + de-duped into
+// one list shown under a single "Emojis" tab.
+const EMOJI_GROUPS: Record<string, string[]> = {
+  faces: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😌', '😔', '😑', '😐', '😶', '😏', '😒', '🙁', '☹️', '😲', '😞', '😖', '😢', '😭', '😤', '😠', '😡', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖'],
+  hands: ['👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🦾', '💪'],
+  hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟'],
+  animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🐢', '🐍', '🦖', '🐙', '🦑', '🦐', '🦀', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🦓', '🦍', '🐘', '🦏', '🐪', '🦒', '🐃', '🐄', '🐎', '🐖', '🐏', '🐑'],
+  food: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥑', '🍆', '🍅', '🌶️', '🌽', '🥒', '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰', '🍞', '🥐', '🥖', '🥨', '🥯', '🥞', '🧇', '🥚', '🍳', '🥓', '🍗', '🌭', '🍔', '🍟', '🍕', '🥪', '🥙', '🧆', '🌮', '🌯', '🥗', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🍤', '🍙', '🍚', '🍥', '🍢', '🍡', '🍧', '🍨', '🍦', '🍰', '🎂', '🧁', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🍯', '🥛', '🥤', '☕', '🍵', '🍶', '🍷', '🍸', '🍹', '🍺', '🍻'],
+  sport: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎳', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '⛳', '⛸️', '🎣', '🎽', '🎿', '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🤾', '🏌️', '🏇', '🧘', '🏄', '🏊', '🚣', '🚴', '🚵', '🎯'],
+  travel: ['🚗', '🚕', '🚙', '🚌', '🏎️', '🚓', '🚑', '🚒', '🏍️', '🛵', '🚲', '🛴', '🛹', '✈️', '🛫', '🚁', '⛵', '🚤', '🚢', '🚂', '🚆', '🚇', '🚊', '🗺️', '🧭'],
+  objects: ['📱', '💻', '⌨️', '🖥️', '🖨️', '🕹️', '💾', '💿', '🎥', '📺', '📷', '📸', '📹', '📞', '☎️', '📻', '🎙️', '⏰', '⌚', '⏳', '🔋', '🔌', '💡', '🔦', '🕯️', '🧯', '💸', '💵', '💰', '💳', '✉️', '📦', '✏️', '✒️', '🖊️', '📝', '📁', '📅', '📈', '📊', '📚', '📖', '🔧', '🔨', '⚙️', '🔪', '🗝️', '🔒', '🔑'],
+  symbols: ['⭐', '🌟', '✨', '⚡', '🔥', '💧', '🌈', '☀️', '🌙', '⛅', '☁️', '❄️', '🌸', '🌺', '🌻', '🌹', '🌷', '🌼', '🌱', '🌲', '🌳', '🍀', '🎵', '🎶', '🎸', '🎹', '🎺', '🥁', '🎨', '🎬', '🎮', '🧩', '🎲', '🎯', '🏆', '🥇', '🎖️', '🏅', '💎', '👑', '🎁', '🎉', '🎊'],
 };
+
+interface EmojiItem {
+  char: string;
+  kw: string;
+}
+
+// Flatten + de-dupe (an emoji keeps the first group it appears in).
+const EMOJIS: EmojiItem[] = (() => {
+  const seen = new Set<string>();
+  const out: EmojiItem[] = [];
+  for (const [kw, chars] of Object.entries(EMOJI_GROUPS)) {
+    for (const char of chars) {
+      if (seen.has(char)) continue;
+      seen.add(char);
+      out.push({ char, kw });
+    }
+  }
+  return out;
+})();
+
+// Icons: the same SF Symbols we surface as quick-select in the form.
+const ICONS = HABIT_ICON_SUGGESTIONS;
+
+type Tab = 'emojis' | 'icons';
 
 interface IconColorPickerModalProps {
   visible: boolean;
   currentIcon: SFSymbol | string;
-  currentColor: string | null;
-  onSelect: (icon: SFSymbol | string, color: string | null) => void;
+  onSelect: (icon: SFSymbol | string) => void;
   onClose: () => void;
 }
 
 export function IconColorPickerModal({
   visible,
   currentIcon,
-  currentColor,
   onSelect,
   onClose,
 }: IconColorPickerModalProps) {
   const { theme } = useUnistyles();
   const [selectedIcon, setSelectedIcon] = useState<SFSymbol | string>(currentIcon);
-  const [selectedColor, setSelectedColor] = useState<string | null>(currentColor);
-  const [tab, setTab] = useState<keyof typeof EMOJI_CATEGORIES>('smileys');
+  const [tab, setTab] = useState<Tab>('emojis');
+  const [search, setSearch] = useState('');
 
-  const isEmoji = selectedIcon.length === 2 || /\p{Emoji}/u.test(selectedIcon);
-  const currentEmojis = EMOJI_CATEGORIES[tab];
+  const q = search.trim().toLowerCase();
+  const isEmoji = /\p{Extended_Pictographic}/u.test(selectedIcon);
+
+  const filteredEmojis = q
+    ? EMOJIS.filter((e) => e.kw.includes(q) || e.char === search.trim())
+    : EMOJIS;
+  const filteredIcons = q
+    ? ICONS.filter((i) => i.label.toLowerCase().includes(q) || i.key.includes(q))
+    : ICONS;
 
   const handleConfirm = () => {
     haptics.success();
-    onSelect(selectedIcon, selectedColor);
+    onSelect(selectedIcon);
     onClose();
+  };
+
+  const handleClose = () => {
+    setSearch('');
+    onClose();
+  };
+
+  const switchTab = (t: Tab) => {
+    haptics.selection();
+    setSearch('');
+    setTab(t);
   };
 
   return (
@@ -55,7 +103,7 @@ export function IconColorPickerModal({
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.canvas }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={onClose} hitSlop={12}>
+          <Pressable onPress={handleClose} hitSlop={12}>
             <Text style={styles.closeButton}>Cancel</Text>
           </Pressable>
           <View style={styles.preview}>
@@ -64,8 +112,8 @@ export function IconColorPickerModal({
             ) : (
               <SymbolView
                 name={selectedIcon as SFSymbol}
-                size={40}
-                tintColor={selectedColor ?? theme.colors.textPrimary}
+                size={30}
+                tintColor={theme.colors.textPrimary}
               />
             )}
           </View>
@@ -76,70 +124,84 @@ export function IconColorPickerModal({
 
         {/* Tabs */}
         <View style={styles.tabBar}>
-          {(Object.keys(EMOJI_CATEGORIES) as (keyof typeof EMOJI_CATEGORIES)[]).map((t) => (
+          {(['emojis', 'icons'] as Tab[]).map((t) => (
             <Pressable
               key={t}
-              onPress={() => {
-                haptics.selection();
-                setTab(t);
-              }}
+              onPress={() => switchTab(t)}
               style={[styles.tab, tab === t && styles.tabActive]}>
               <Text style={[styles.tabLabel, tab === t && styles.tabLabelActive]}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === 'emojis' ? 'Emojis' : 'Icons'}
               </Text>
             </Pressable>
           ))}
         </View>
 
-        {/* Emoji Grid */}
-        <FlatList
-          key={`emoji-${tab}`}
-          data={currentEmojis}
-          numColumns={7}
-          columnWrapperStyle={styles.columnWrapper}
-          contentContainerStyle={styles.gridContent}
-          keyExtractor={(item, i) => `${item}-${i}`}
-          renderItem={({ item }) => {
-            const selected = item === selectedIcon;
-            return (
-              <Pressable
-                onPress={() => {
-                  haptics.selection();
-                  setSelectedIcon(item);
-                }}
-                style={[styles.emojiCell, selected && styles.emojiCellSelected]}>
-                <Text style={styles.emoji}>{item}</Text>
-              </Pressable>
-            );
-          }}
-        />
+        {/* Search */}
+        <View style={styles.searchWrap}>
+          <SymbolView name="magnifyingglass" size={16} tintColor={theme.colors.textMuted} />
+          <TextInput
+            placeholder={tab === 'emojis' ? 'Search emojis' : 'Search icons'}
+            placeholderTextColor={theme.colors.textMuted}
+            value={search}
+            onChangeText={setSearch}
+            style={[styles.searchInput, { color: theme.colors.textPrimary }]}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+        </View>
 
-        {/* Color Picker */}
-        <View style={styles.colorSection}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.textSecondary }]}>
-            Color
-          </Text>
-          <View style={styles.colorRow}>
-            {HABIT_COLORS.map((opt) => {
-              const selected = opt.value === selectedColor;
-              const swatch = opt.value ?? theme.colors.ink;
+        {/* Grid */}
+        {tab === 'emojis' ? (
+          <FlatList
+            key="emojis"
+            data={filteredEmojis}
+            numColumns={7}
+            keyboardShouldPersistTaps="handled"
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.gridContent}
+            keyExtractor={(item) => item.char}
+            renderItem={({ item }) => {
+              const selected = item.char === selectedIcon;
               return (
                 <Pressable
-                  key={opt.label}
-                  hitSlop={8}
                   onPress={() => {
                     haptics.selection();
-                    setSelectedColor(opt.value);
+                    setSelectedIcon(item.char);
                   }}
-                  style={[styles.swatch, { backgroundColor: swatch }]}>
-                  {selected && (
-                    <Text style={styles.swatchCheck}>✓</Text>
-                  )}
+                  style={[styles.emojiCell, selected && styles.cellSelected]}>
+                  <Text style={styles.emoji}>{item.char}</Text>
                 </Pressable>
               );
-            })}
-          </View>
-        </View>
+            }}
+          />
+        ) : (
+          <FlatList
+            key="icons"
+            data={filteredIcons}
+            numColumns={6}
+            keyboardShouldPersistTaps="handled"
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.gridContent}
+            keyExtractor={(item) => item.key}
+            renderItem={({ item }) => {
+              const selected = item.key === selectedIcon;
+              return (
+                <Pressable
+                  onPress={() => {
+                    haptics.selection();
+                    setSelectedIcon(item.key);
+                  }}
+                  style={[styles.iconCell, selected && styles.cellSelected]}>
+                  <SymbolView
+                    name={item.key}
+                    size={24}
+                    tintColor={selected ? theme.colors.accent : theme.colors.textPrimary}
+                  />
+                </Pressable>
+              );
+            }}
+          />
+        )}
       </SafeAreaView>
     </Modal>
   );
@@ -156,19 +218,17 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'space-between',
     paddingHorizontal: theme.space.lg,
     paddingVertical: theme.space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.separator,
   },
   preview: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 52,
+    height: 52,
+    borderRadius: theme.radius.md,
     backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emojiPreview: {
-    fontSize: 36,
+    fontSize: 30,
   },
   closeButton: {
     fontSize: theme.font.body,
@@ -181,31 +241,44 @@ const styles = StyleSheet.create((theme) => ({
   },
   tabBar: {
     flexDirection: 'row',
-    gap: theme.space.md,
+    gap: theme.space.lg,
     paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.separator,
+    paddingTop: theme.space.xs,
   },
   tab: {
     paddingVertical: theme.space.sm,
-    paddingHorizontal: theme.space.md,
   },
   tabActive: {
     borderBottomWidth: 2,
     borderBottomColor: theme.colors.textPrimary,
   },
   tabLabel: {
-    fontSize: theme.font.caption,
-    fontWeight: theme.weight.medium,
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.semibold,
     color: theme.colors.textSecondary,
   },
   tabLabelActive: {
     color: theme.colors.textPrimary,
   },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.sm,
+    marginHorizontal: theme.space.lg,
+    marginTop: theme.space.md,
+    paddingHorizontal: theme.space.md,
+    height: 40,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.card,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: theme.font.body,
+    padding: 0,
+  },
   gridContent: {
     paddingHorizontal: theme.space.md,
-    paddingVertical: theme.space.md,
+    paddingTop: theme.space.md,
     paddingBottom: theme.space.xl,
   },
   columnWrapper: {
@@ -219,44 +292,20 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'center',
     borderRadius: theme.radius.md,
   },
-  emojiCellSelected: {
+  iconCell: {
+    width: '15%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.card,
+  },
+  cellSelected: {
     backgroundColor: theme.colors.card,
     borderWidth: 2,
     borderColor: theme.colors.accent,
   },
   emoji: {
-    fontSize: 24,
-  },
-  colorSection: {
-    paddingHorizontal: theme.space.lg,
-    paddingVertical: theme.space.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.separator,
-  },
-  sectionLabel: {
-    fontSize: theme.font.caption,
-    fontWeight: theme.weight.medium,
-    marginBottom: theme.space.md,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  colorRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.space.md,
-  },
-  swatch: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  swatchCheck: {
-    fontSize: 18,
-    fontWeight: theme.weight.bold,
-    color: theme.colors.canvas,
+    fontSize: 26,
   },
 }));
