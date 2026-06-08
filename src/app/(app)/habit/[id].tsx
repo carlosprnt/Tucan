@@ -3,8 +3,8 @@ import '@/theme/unistyles';
 import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect } from 'react';
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
@@ -62,21 +62,12 @@ const HabitDetail = observer(function HabitDetail() {
   return (
     <View style={styles.screen}>
       {mode === 'month' ? (
-        // Virtualized so long histories render only the visible months.
-        <FlatList
-          style={styles.container}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          data={months}
-          keyExtractor={(m) => `${m.year}-${m.month}`}
-          // Paint the current month first, then stream older months in one at a
-          // time so entering a habit is instant (no blank seconds).
-          initialNumToRender={1}
-          maxToRenderPerBatch={1}
-          updateCellsBatchingPeriod={40}
-          windowSize={5}
-          removeClippedSubviews
-          ListHeaderComponent={
+        <MonthScroll
+          months={months}
+          habit={habit}
+          completed={completed}
+          today={today}
+          header={
             <View style={styles.listHeader}>
               <Header
                 title={habit.name}
@@ -87,22 +78,6 @@ const HabitDetail = observer(function HabitDetail() {
               <Text style={styles.hint}>Tap any past day to fill it in.</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={styles.monthBlock}>
-              <Text style={styles.monthLabel}>{monthLabel(item.year, item.month)}</Text>
-              <MonthCalendar
-                year={item.year}
-                month={item.month}
-                completed={completed}
-                startDate={habit.start_date}
-                today={today}
-                color={habit.color}
-                activeDays={habit.active_days}
-                animate={false}
-                onToggleDay={(key) => toggleCompletion(habit.id, key)}
-              />
-            </View>
-          )}
         />
       ) : (
         <ScrollView
@@ -129,6 +104,64 @@ const HabitDetail = observer(function HabitDetail() {
 });
 
 export default HabitDetail;
+
+type Month = { year: number; month: number };
+
+/**
+ * Vertical month list that reveals the current month immediately, then fills in
+ * older months one at a time — each shows a skeleton until it's rendered, so
+ * entering a habit is instant with no blank gaps.
+ */
+function MonthScroll({
+  months,
+  habit,
+  completed,
+  today,
+  header,
+}: {
+  months: Month[];
+  habit: ReturnType<typeof getHabit> & {};
+  completed: Set<DateKey>;
+  today: DateKey;
+  header: React.ReactNode;
+}) {
+  const [revealed, setRevealed] = useState(1);
+
+  useEffect(() => {
+    if (revealed >= months.length) return;
+    const t = setTimeout(() => setRevealed((r) => r + 1), 45);
+    return () => clearTimeout(t);
+  }, [revealed, months.length]);
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}>
+      {header}
+      {months.map((m, i) => (
+        <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
+          <Text style={styles.monthLabel}>{monthLabel(m.year, m.month)}</Text>
+          {i < revealed ? (
+            <MonthCalendar
+              year={m.year}
+              month={m.month}
+              completed={completed}
+              startDate={habit.start_date}
+              today={today}
+              color={habit.color}
+              activeDays={habit.active_days}
+              animate={false}
+              onToggleDay={(key) => toggleCompletion(habit.id, key)}
+            />
+          ) : (
+            <View style={styles.monthSkeleton} />
+          )}
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
 
 const CELL = 18;
 const GAP = 8;
@@ -289,6 +322,12 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   monthBlock: {
     gap: theme.space.md,
+  },
+  monthSkeleton: {
+    height: 280,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.card,
+    opacity: 0.5,
   },
   monthLabel: {
     fontSize: theme.font.heading,
