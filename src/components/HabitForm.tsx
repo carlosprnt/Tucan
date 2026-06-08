@@ -374,61 +374,56 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           </>
         )}
       </ScrollView>
-      </KeyboardAvoidingView>
 
       {(onStep1 || !isEdit) && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.fabKav}
-          pointerEvents="box-none">
-          <View style={styles.fabBar} pointerEvents="box-none">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={onStep1 ? 'Next' : 'Save'}
-              disabled={!canSave}
-              onPress={onStep1 ? goNext : onSave}
-              style={({ pressed }) => [
-                styles.nextFab,
-                !canSave && styles.nextFabDisabled,
-                pressed && styles.pressed,
-              ]}>
-              {/* Arrow icon - fades out */}
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  opacity: stepTransitionAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 0],
-                  }),
-                }}>
-                <SymbolView
-                  name="arrow.right"
-                  size={26}
-                  weight="bold"
-                  tintColor={theme.colors.canvas}
-                />
-              </Animated.View>
+        <View style={styles.fabBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={onStep1 ? 'Next' : 'Save'}
+            disabled={!canSave}
+            onPress={onStep1 ? goNext : onSave}
+            style={({ pressed }) => [
+              styles.nextFab,
+              !canSave && styles.nextFabDisabled,
+              pressed && styles.pressed,
+            ]}>
+            {/* Arrow icon - fades out */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                opacity: stepTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0],
+                }),
+              }}>
+              <SymbolView
+                name="arrow.right"
+                size={26}
+                weight="bold"
+                tintColor={theme.colors.canvas}
+              />
+            </Animated.View>
 
-              {/* Checkmark icon - fades in */}
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  opacity: stepTransitionAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 1],
-                  }),
-                }}>
-                <SymbolView
-                  name="checkmark"
-                  size={26}
-                  weight="bold"
-                  tintColor={theme.colors.canvas}
-                />
-              </Animated.View>
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
+            {/* Checkmark icon - fades in */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                opacity: stepTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                }),
+              }}>
+              <SymbolView
+                name="checkmark"
+                size={26}
+                weight="bold"
+                tintColor={theme.colors.canvas}
+              />
+            </Animated.View>
+          </Pressable>
+        </View>
       )}
+      </KeyboardAvoidingView>
 
       <IconColorPickerModal
         visible={showIconColorPicker}
@@ -504,17 +499,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingBottom: rt.insets.bottom + theme.space.xxxl,
     gap: theme.space.xl,
   },
-  fabKav: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10,
-    justifyContent: 'flex-end',
-  },
   fabBar: {
     alignItems: 'flex-end',
     paddingRight: 20,
+    paddingTop: theme.space.sm,
     paddingBottom: 20,
   },
   nextFab: {
