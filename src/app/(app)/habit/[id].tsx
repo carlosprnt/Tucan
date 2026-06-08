@@ -3,7 +3,7 @@ import '@/theme/unistyles';
 import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -12,7 +12,6 @@ import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { cascadeIn } from '@/lib/anim';
 import { addDays, daysBetween, fromDateKey, isActiveDay, todayKey, type DateKey } from '@/lib/date';
-import { haptics } from '@/lib/haptics';
 import {
   completedDates,
   detailUI$,
@@ -26,9 +25,7 @@ const HabitDetail = observer(function HabitDetail() {
   const router = useRouter();
   const { theme } = useUnistyles();
 
-  const now = new Date();
   const mode = use$(detailUI$.mode);
-  const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
   useEffect(() => {
     detailUI$.habitId.set(id ?? null);
@@ -60,14 +57,7 @@ const HabitDetail = observer(function HabitDetail() {
   const completed = completedDates(habit.id);
   const stats = statsForHabit(habit.id, habit.start_date, habit.active_days);
   const accent = habit.color ?? theme.colors.ink;
-
-  function shiftMonth(delta: number) {
-    haptics.selection();
-    setCursor((c) => {
-      const d = new Date(c.year, c.month + delta, 1);
-      return { year: d.getFullYear(), month: d.getMonth() };
-    });
-  }
+  const months = monthsDescending(habit.start_date, today);
 
   return (
     <View style={styles.screen}>
@@ -88,26 +78,23 @@ const HabitDetail = observer(function HabitDetail() {
 
         {mode === 'month' ? (
           <View style={styles.section}>
-            <View style={styles.monthNav}>
-              <Pressable hitSlop={10} onPress={() => shiftMonth(-1)} accessibilityRole="button" accessibilityLabel="Previous month" style={styles.navBtn}>
-                <SymbolView name="chevron.left" size={18} tintColor={theme.colors.textSecondary} />
-              </Pressable>
-              <Text style={styles.monthLabel}>{monthLabel(cursor.year, cursor.month)}</Text>
-              <Pressable hitSlop={10} onPress={() => shiftMonth(1)} accessibilityRole="button" accessibilityLabel="Next month" style={styles.navBtn}>
-                <SymbolView name="chevron.right" size={18} tintColor={theme.colors.textSecondary} />
-              </Pressable>
-            </View>
-            <MonthCalendar
-              year={cursor.year}
-              month={cursor.month}
-              completed={completed}
-              startDate={habit.start_date}
-              today={today}
-              color={habit.color}
-              activeDays={habit.active_days}
-              onToggleDay={(key) => toggleCompletion(habit.id, key)}
-            />
             <Text style={styles.hint}>Tap any past day to fill it in.</Text>
+            {months.map(({ year, month }) => (
+              <View key={`${year}-${month}`} style={styles.monthBlock}>
+                <Text style={styles.monthLabel}>{monthLabel(year, month)}</Text>
+                <MonthCalendar
+                  year={year}
+                  month={month}
+                  completed={completed}
+                  startDate={habit.start_date}
+                  today={today}
+                  color={habit.color}
+                  activeDays={habit.active_days}
+                  animate={false}
+                  onToggleDay={(key) => toggleCompletion(habit.id, key)}
+                />
+              </View>
+            ))}
           </View>
         ) : (
           <Accumulation
@@ -211,6 +198,26 @@ function monthLabel(year: number, month: number): string {
   );
 }
 
+/** Months from today's month back to the start month, newest first. */
+function monthsDescending(startDate: DateKey, today: DateKey): { year: number; month: number }[] {
+  const start = fromDateKey(startDate);
+  const end = fromDateKey(today);
+  const startY = start.getFullYear();
+  const startM = start.getMonth();
+  const months: { year: number; month: number }[] = [];
+  let y = end.getFullYear();
+  let m = end.getMonth();
+  while (y > startY || (y === startY && m >= startM)) {
+    months.push({ year: y, month: m });
+    m -= 1;
+    if (m < 0) {
+      m = 11;
+      y -= 1;
+    }
+  }
+  return months;
+}
+
 const styles = StyleSheet.create((theme, rt) => ({
   screen: {
     flex: 1,
@@ -261,18 +268,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textSecondary,
   },
   section: {
-    gap: theme.space.lg,
+    gap: theme.space.xl,
   },
-  monthNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  navBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+  monthBlock: {
+    gap: theme.space.md,
   },
   monthLabel: {
     fontSize: theme.font.heading,

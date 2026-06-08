@@ -31,6 +31,8 @@ interface MonthCalendarProps {
   color?: string | null;
   activeDays?: number;
   onToggleDay: (key: DateKey) => void;
+  /** Cascade the cells in on mount. Off when many months are stacked. */
+  animate?: boolean;
 }
 
 /** Weekday-aligned month grid (Monday first). Cells cascade in; tapping a day
@@ -44,6 +46,7 @@ export function MonthCalendar({
   color,
   activeDays = ALL_DAYS,
   onToggleDay,
+  animate = true,
 }: MonthCalendarProps) {
   const [width, setWidth] = useState(0);
 
@@ -100,6 +103,7 @@ export function MonthCalendar({
                 tappable={tappable}
                 label={cell.key}
                 isDone={isDone}
+                animate={animate}
                 onToggle={() => onToggleDay(cell.key)}
               />
             );
@@ -119,6 +123,7 @@ function DayCell({
   tappable,
   label,
   isDone,
+  animate,
   onToggle,
 }: {
   slot: number;
@@ -129,6 +134,7 @@ function DayCell({
   tappable: boolean;
   label: string;
   isDone: boolean;
+  animate: boolean;
   onToggle: () => void;
 }) {
   const scale = useSharedValue(1);
@@ -136,7 +142,10 @@ function DayCell({
   const sparkleRef = useRef<SparkleBurstHandle>(null);
 
   return (
-    <Animated.View entering={cascadeIn(slot)} style={{ width: cellSize, height: cellSize }}>
+    <Animated.View
+      entering={animate ? cascadeIn(slot) : undefined}
+      style={{ width: cellSize, height: cellSize }}>
+
       <Pressable
         disabled={!tappable}
         accessibilityRole="button"
