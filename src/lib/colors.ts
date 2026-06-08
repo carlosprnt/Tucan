@@ -17,4 +17,10 @@ export const HABIT_COLORS: HabitColorOption[] = [
   { value: '#0091FF', label: 'Blue', premium: true },
   { value: '#6E56CF', label: 'Violet', premium: true },
   { value: '#E93D82', label: 'Pink', premium: true },
+  { value: '#FF6B6B', label: 'Coral', premium: true },
+  { value: '#4ECDC4', label: 'Teal', premium: true },
+  { value: '#95E1D3', label: 'Mint', premium: true },
+  { value: '#F38181', label: 'Rose', premium: true },
+  { value: '#AA96DA', label: 'Lavender', premium: true },
+  { value: '#FCBAD3', label: 'Mauve', premium: true },
 ];

@@ -24,6 +24,7 @@ export const HABIT_NAME_SUGGESTIONS: { name: string; icon: SFSymbol }[] = [
 
 /** Icons available in the create form (monochrome SF Symbols). */
 export const HABIT_ICON_SUGGESTIONS: { key: SFSymbol; label: string }[] = [
+  { key: 'circle', label: 'None' },
   { key: 'drop.fill', label: 'Water' },
   { key: 'figure.run', label: 'Run' },
   { key: 'book.fill', label: 'Read' },

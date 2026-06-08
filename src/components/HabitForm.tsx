@@ -232,17 +232,18 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               </Field>
             )}
 
-        {/* Description */}
-        <Field label="Description">
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Add a note (optional)"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.input}
-            multiline
-          />
-        </Field>
+            {isEdit && (
+              <Field label="Description">
+                <TextInput
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Add a note (optional)"
+                  placeholderTextColor={theme.colors.textMuted}
+                  style={styles.input}
+                  multiline
+                />
+              </Field>
+            )}
 
         {/* Icon */}
         <Field label="Icon">
@@ -330,7 +331,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             <DateTimePicker
               value={fromDateKey(startDate)}
               mode="date"
-              display="inline"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               maximumDate={new Date()}
               onChange={onDateChange}
               accentColor={accent}
