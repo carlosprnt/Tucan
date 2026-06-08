@@ -15,6 +15,11 @@ export const HABIT_NAME_SUGGESTIONS: { name: string; icon: SFSymbol }[] = [
   { name: 'Read', icon: 'book.fill' },
   { name: 'Meditate', icon: 'brain.head.profile' },
   { name: 'Sleep early', icon: 'moon.fill' },
+  { name: 'Walk', icon: 'figure.walk' },
+  { name: 'Journal', icon: 'pencil' },
+  { name: 'Vitamins', icon: 'pills.fill' },
+  { name: 'Save money', icon: 'dollarsign.circle.fill' },
+  { name: 'Eat healthy', icon: 'fork.knife' },
 ];
 
 /** Icons available in the create form (monochrome SF Symbols). */

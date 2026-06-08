@@ -186,21 +186,20 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               returnKeyType="next"
               onSubmitEditing={goNext}
             />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.suggestions}>
-              {HABIT_NAME_SUGGESTIONS.map((s) => (
-                <Pressable
-                  key={s.name}
-                  style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-                  onPress={() => pickSuggestion(s)}>
-                  <SymbolView name={s.icon} size={15} tintColor={theme.colors.textSecondary} />
-                  <Text style={styles.chipText}>{s.name}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <View style={styles.suggestionsBlock}>
+              <Text style={styles.suggestionsLabel}>Suggestions</Text>
+              <View style={styles.suggestionsWrap}>
+                {HABIT_NAME_SUGGESTIONS.map((s) => (
+                  <Pressable
+                    key={s.name}
+                    style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+                    onPress={() => pickSuggestion(s)}>
+                    <SymbolView name={s.icon} size={15} tintColor={theme.colors.textPrimary} />
+                    <Text style={styles.chipText}>{s.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           </View>
         ) : (
           <>
@@ -440,11 +439,20 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textPrimary,
     paddingVertical: theme.space.sm,
   },
-  suggestions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  suggestionsBlock: {
     gap: theme.space.sm,
-    paddingRight: theme.space.lg,
+  },
+  suggestionsLabel: {
+    fontSize: theme.font.caption,
+    fontWeight: theme.weight.medium,
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  suggestionsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.space.sm,
   },
   daysRow: {
     flexDirection: 'row',
