@@ -40,6 +40,8 @@ import {
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const isEmojiIcon = (value: string) => /\p{Extended_Pictographic}/u.test(value);
+
 export function HabitForm({ habitId }: { habitId?: string }) {
   const router = useRouter();
   const { theme } = useUnistyles();
@@ -131,6 +133,13 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
   const accent = color ?? theme.colors.ink;
   const canSave = name.trim().length > 0;
+
+  // Quick-select row: the currently selected icon/emoji always sits first so
+  // a pick from the modal is visible here, followed by the suggestions.
+  const quickIcons: (SFSymbol | string)[] = [
+    icon,
+    ...HABIT_ICON_SUGGESTIONS.map((o) => o.key).filter((k) => k !== icon),
+  ].slice(0, 9);
 
   function pickSuggestion(s: { name: string; icon: SFSymbol }) {
     haptics.selection();
@@ -289,24 +298,28 @@ export function HabitForm({ habitId }: { habitId?: string }) {
         {/* Icon */}
         <Field label="Icon">
           <View style={styles.iconRow}>
-            {HABIT_ICON_SUGGESTIONS.slice(0, 9).map((opt) => {
-              const selected = opt.key === icon;
+            {quickIcons.map((key) => {
+              const selected = key === icon;
               return (
                 <Pressable
-                  key={opt.key}
+                  key={key}
                   accessibilityRole="button"
-                  accessibilityLabel={`${opt.label} icon`}
+                  accessibilityLabel={`${key} icon`}
                   accessibilityState={{ selected }}
                   onPress={() => {
                     haptics.selection();
-                    setIcon(opt.key);
+                    setIcon(key);
                   }}
                   style={[styles.iconCell, selected && { borderColor: accent }]}>
-                  <SymbolView
-                    name={opt.key}
-                    size={22}
-                    tintColor={selected ? accent : theme.colors.textSecondary}
-                  />
+                  {isEmojiIcon(key) ? (
+                    <Text style={styles.iconEmoji}>{key}</Text>
+                  ) : (
+                    <SymbolView
+                      name={key as SFSymbol}
+                      size={22}
+                      tintColor={selected ? accent : theme.colors.textSecondary}
+                    />
+                  )}
                 </Pressable>
               );
             })}
@@ -648,6 +661,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconEmoji: {
+    fontSize: 26,
   },
   colorRow: {
     flexDirection: 'row',
