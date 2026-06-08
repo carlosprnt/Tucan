@@ -57,6 +57,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const animatedKeyboardHeight = useRef(new Animated.Value(0)).current;
+  const stepTransitionAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
@@ -87,7 +88,17 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     if (!canSave) return;
     haptics.selection();
     Keyboard.dismiss();
-    setStep(2);
+
+    // Animate button transition
+    Animated.timing(stepTransitionAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setStep(2);
+      // Reset animation for potential future use
+      stepTransitionAnim.setValue(0);
+    });
   }
 
   function toggleDay(i: number) {
@@ -391,23 +402,100 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               ],
             },
           ]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={onStep1 ? 'Next' : 'Save'}
-            disabled={!canSave}
-            onPress={onStep1 ? goNext : onSave}
-            style={({ pressed }) => [
-              styles.nextFab,
-              !canSave && styles.nextFabDisabled,
-              pressed && styles.pressed,
-            ]}>
-            <SymbolView
-              name={onStep1 ? 'arrow.right' : 'checkmark'}
-              size={26}
-              weight="bold"
-              tintColor={theme.colors.canvas}
-            />
-          </Pressable>
+          {/* Button 1: Next (Step 1) */}
+          {onStep1 && (
+            <Animated.View
+              style={{
+                opacity: stepTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0],
+                }),
+                transform: [
+                  {
+                    scale: stepTransitionAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.3],
+                    }),
+                  },
+                ],
+              }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Next"
+                disabled={!canSave}
+                onPress={goNext}
+                style={({ pressed }) => [
+                  styles.nextFab,
+                  !canSave && styles.nextFabDisabled,
+                  pressed && styles.pressed,
+                ]}>
+                <SymbolView
+                  name="arrow.right"
+                  size={26}
+                  weight="bold"
+                  tintColor={theme.colors.canvas}
+                />
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Button 2: Check (Step 2) */}
+          {!isEdit && !onStep1 && (
+            <Animated.View
+              style={{
+                opacity: stepTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                }),
+                transform: [
+                  {
+                    scale: stepTransitionAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ],
+              }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Save"
+                disabled={!canSave}
+                onPress={onSave}
+                style={({ pressed }) => [
+                  styles.nextFab,
+                  !canSave && styles.nextFabDisabled,
+                  pressed && styles.pressed,
+                ]}>
+                <SymbolView
+                  name="checkmark"
+                  size={26}
+                  weight="bold"
+                  tintColor={theme.colors.canvas}
+                />
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* Edit mode: Save button */}
+          {isEdit && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Save"
+              disabled={!canSave}
+              onPress={onSave}
+              style={({ pressed }) => [
+                styles.nextFab,
+                !canSave && styles.nextFabDisabled,
+                pressed && styles.pressed,
+              ]}>
+              <SymbolView
+                name="checkmark"
+                size={26}
+                weight="bold"
+                tintColor={theme.colors.canvas}
+              />
+            </Pressable>
+          )}
         </Animated.View>
       )}
 
