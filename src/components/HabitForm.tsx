@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
+  Easing,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -61,14 +62,17 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
   useEffect(() => {
     // On iOS, `will` events fire before the keyboard animates, so the FAB
-    // rides up in sync with it (no lag). Match the system animation duration.
+    // rides up in sync with it. Match the system animation duration AND the
+    // keyboard's easing curve (iOS curve 7 ≈ this bezier) so they move as one.
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const keyboardEasing = Easing.bezier(0.17, 0.59, 0.4, 0.77);
 
     const showSub = Keyboard.addListener(showEvent, (e) => {
       Animated.timing(animatedKeyboardHeight, {
         toValue: e.endCoordinates.height,
         duration: e.duration || 250,
+        easing: keyboardEasing,
         useNativeDriver: false,
       }).start();
     });
@@ -76,6 +80,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       Animated.timing(animatedKeyboardHeight, {
         toValue: 0,
         duration: e.duration || 250,
+        easing: keyboardEasing,
         useNativeDriver: false,
       }).start();
     });
