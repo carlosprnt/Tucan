@@ -10,6 +10,7 @@ export default function AppLayout() {
     <View style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" />
       </Stack>

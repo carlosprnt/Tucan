@@ -8,7 +8,6 @@ export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ headerShown: false }} tabBar={() => null}>
       <Tabs.Screen name="index" options={{ title: 'Habits' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );
 }

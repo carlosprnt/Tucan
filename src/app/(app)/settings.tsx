@@ -4,6 +4,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { observer, use$ } from '@legendapp/state/react';
+import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
@@ -25,6 +26,7 @@ const THEME_OPTIONS: ThemePref[] = ['light', 'dark', 'auto'];
 
 const Settings = observer(function Settings() {
   const { theme } = useUnistyles();
+  const router = useRouter();
 
   const email = use$(() => auth$.session.get()?.user.email ?? '');
   const profile = currentProfile();
@@ -78,7 +80,20 @@ const Settings = observer(function Settings() {
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Settings</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Settings</Text>
+        <Pressable
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={() => {
+            haptics.selection();
+            router.back();
+          }}
+          style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}>
+          <SymbolView name="xmark" size={16} weight="semibold" tintColor={theme.colors.textSecondary} />
+        </Pressable>
+      </View>
 
       {/* Theme */}
       <Section label="Appearance">
@@ -216,9 +231,22 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     paddingHorizontal: theme.space.lg,
-    paddingTop: rt.insets.top + theme.space.lg,
-    paddingBottom: rt.insets.bottom + 96,
+    paddingTop: theme.space.xl,
+    paddingBottom: rt.insets.bottom + theme.space.xxl,
     gap: theme.space.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.card,
   },
   title: {
     fontSize: theme.font.title,

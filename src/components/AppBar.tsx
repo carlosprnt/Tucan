@@ -109,8 +109,7 @@ export const AppBar = observer(function AppBar() {
   }
 
   // Main context: three buttons spread across the bottom —
-  // left Settings · center Create · right view-change (Habits when in Settings).
-  const settingsActive = pathname === '/settings';
+  // left Settings (opens the modal) · center Create · right view-change.
   const overview = homeUI$.overview.get();
 
   return (
@@ -120,15 +119,10 @@ export const AppBar = observer(function AppBar() {
       <RoundButton
         onPress={() => {
           haptics.selection();
-          router.navigate('/settings');
+          router.push('/settings');
         }}
-        label="Settings"
-        selected={settingsActive}>
-        <SymbolView
-          name="gearshape.fill"
-          size={24}
-          tintColor={settingsActive ? theme.colors.ink : theme.colors.textSecondary}
-        />
+        label="Settings">
+        <SymbolView name="gearshape.fill" size={24} tintColor={theme.colors.textSecondary} />
       </RoundButton>
 
       <Fab
@@ -140,34 +134,19 @@ export const AppBar = observer(function AppBar() {
         tint={theme.colors.canvas}
       />
 
-      {settingsActive ? (
-        <RoundButton
-          onPress={() => {
-            haptics.selection();
-            router.navigate('/');
-          }}
-          label="Habits">
-          <SymbolView
-            name="square.grid.2x2.fill"
-            size={24}
-            tintColor={theme.colors.textSecondary}
-          />
-        </RoundButton>
-      ) : (
-        <RoundButton
-          onPress={() => {
-            haptics.selection();
-            homeUI$.overview.set((o) => !o);
-          }}
-          label={overview ? 'Show list' : 'Show overview'}
-          selected={overview}>
-          <SymbolView
-            name={overview ? 'square.grid.2x2.fill' : 'chart.bar.fill'}
-            size={24}
-            tintColor={overview ? theme.colors.ink : theme.colors.textSecondary}
-          />
-        </RoundButton>
-      )}
+      <RoundButton
+        onPress={() => {
+          haptics.selection();
+          homeUI$.overview.set((o) => !o);
+        }}
+        label={overview ? 'Show list' : 'Show overview'}
+        selected={overview}>
+        <SymbolView
+          name={overview ? 'square.grid.2x2.fill' : 'chart.bar.fill'}
+          size={24}
+          tintColor={overview ? theme.colors.ink : theme.colors.textSecondary}
+        />
+      </RoundButton>
     </View>
   );
 });
