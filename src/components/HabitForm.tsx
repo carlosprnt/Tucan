@@ -170,6 +170,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       </View>
 
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
@@ -177,14 +178,13 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           <View style={styles.step1}>
             <TextInput
               value={name}
-              onChangeText={setName}
+              onChangeText={(t) => setName(t.replace(/\n/g, ''))}
               placeholder="Habit name"
               placeholderTextColor={theme.colors.textMuted}
               style={styles.xxlInput}
               autoFocus
               maxLength={40}
-              returnKeyType="next"
-              onSubmitEditing={goNext}
+              multiline
             />
             <View style={styles.suggestionsBlock}>
               <Text style={styles.suggestionsLabel}>Suggestions</Text>
@@ -353,6 +353,23 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           </>
         )}
       </ScrollView>
+
+      {onStep1 && (
+        <View style={styles.fabBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Next"
+            disabled={!canSave}
+            onPress={goNext}
+            style={({ pressed }) => [
+              styles.nextFab,
+              !canSave && styles.nextFabDisabled,
+              pressed && styles.pressed,
+            ]}>
+            <SymbolView name="arrow.right" size={26} weight="bold" tintColor={theme.colors.canvas} />
+          </Pressable>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -404,10 +421,30 @@ const styles = StyleSheet.create((theme, rt) => ({
   saveDisabled: {
     color: theme.colors.textMuted,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: theme.space.lg,
     paddingBottom: rt.insets.bottom + theme.space.xxxl,
     gap: theme.space.xl,
+  },
+  fabBar: {
+    paddingHorizontal: theme.space.lg,
+    paddingTop: theme.space.sm,
+    paddingBottom: rt.insets.bottom + theme.space.sm,
+    alignItems: 'flex-end',
+  },
+  nextFab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextFabDisabled: {
+    opacity: 0.35,
   },
   field: {
     gap: theme.space.sm,
@@ -485,11 +522,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingVertical: theme.space.sm,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: theme.colors.separator,
+    borderColor: theme.colors.textPrimary,
   },
   chipText: {
     fontSize: theme.font.caption,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textPrimary,
   },
   iconRow: {
     flexDirection: 'row',
