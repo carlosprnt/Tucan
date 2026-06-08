@@ -3,7 +3,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -58,6 +58,40 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [stepTransitionAnim] = useState(() => new Animated.Value(0));
+  // Tracks keyboard height to float the FAB above it. The reported height
+  // includes the QuickType suggestions bar, and we drive it on the native
+  // thread (useNativeDriver) so the motion stays frame-perfect with no lag.
+  const [keyboardHeight] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    // `will` events fire before the keyboard animates; match its duration and
+    // easing curve so the FAB rides up in sync.
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const keyboardEasing = Easing.bezier(0.17, 0.59, 0.4, 0.77);
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      Animated.timing(keyboardHeight, {
+        toValue: e.endCoordinates.height,
+        duration: e.duration || 250,
+        easing: keyboardEasing,
+        useNativeDriver: true,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener(hideEvent, (e) => {
+      Animated.timing(keyboardHeight, {
+        toValue: 0,
+        duration: e.duration || 250,
+        easing: keyboardEasing,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardHeight]);
 
   // Two-step create: step 1 is just the name; edit shows everything at once.
   const onStep1 = !isEdit && step === 1;
@@ -374,9 +408,14 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {(onStep1 || !isEdit) && (
-        <View style={styles.fabBar}>
+        <Animated.View
+          style={[
+            styles.fabBar,
+            { transform: [{ translateY: Animated.multiply(keyboardHeight, -1) }] },
+          ]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={onStep1 ? 'Next' : 'Save'}
@@ -421,9 +460,8 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               />
             </Animated.View>
           </Pressable>
-        </View>
+        </Animated.View>
       )}
-      </KeyboardAvoidingView>
 
       <IconColorPickerModal
         visible={showIconColorPicker}
@@ -500,10 +538,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.space.xl,
   },
   fabBar: {
-    alignItems: 'flex-end',
-    paddingRight: 20,
-    paddingTop: theme.space.sm,
-    paddingBottom: 20,
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    zIndex: 10,
   },
   nextFab: {
     width: 56,
