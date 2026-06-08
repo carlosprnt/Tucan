@@ -27,6 +27,7 @@ import {
   HABIT_ICON_SUGGESTIONS,
   HABIT_NAME_SUGGESTIONS,
   habitIcon,
+  isEmojiIcon,
 } from '@/lib/icons';
 import {
   createHabit,
@@ -39,8 +40,6 @@ import {
 // Monday-first, matching the calendar and the active_days bitmask (bit0 = Mon).
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-const isEmojiIcon = (value: string) => /\p{Extended_Pictographic}/u.test(value);
 
 export function HabitForm({ habitId }: { habitId?: string }) {
   const router = useRouter();

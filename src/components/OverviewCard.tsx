@@ -1,11 +1,10 @@
 import { observer } from '@legendapp/state/react';
-import { SymbolView } from 'expo-symbols';
 import { Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { HabitGlyph } from '@/components/HabitGlyph';
 import { YearHeatmap } from '@/components/YearHeatmap';
 import { todayKey } from '@/lib/date';
-import { habitIcon } from '@/lib/icons';
 import { completedDates, type Habit } from '@/store';
 
 /** Overview row: icon + name + total + the habit's year heatmap. */
@@ -17,7 +16,7 @@ export const OverviewCard = observer(function OverviewCard({ habit }: { habit: H
   return (
     <View style={styles.card}>
       <View style={styles.head}>
-        <SymbolView name={habitIcon(habit.icon)} size={18} tintColor={habit.color ?? theme.colors.ink} />
+        <HabitGlyph icon={habit.icon} size={18} color={habit.color ?? theme.colors.ink} />
         <Text style={styles.name} numberOfLines={1}>
           {habit.name}
         </Text>

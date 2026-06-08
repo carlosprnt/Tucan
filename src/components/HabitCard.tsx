@@ -1,13 +1,12 @@
 import { observer } from '@legendapp/state/react';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { type LayoutChangeEvent, Pressable, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { HabitGlyph } from '@/components/HabitGlyph';
 import { todayKey } from '@/lib/date';
 import { buildRecentStates } from '@/lib/grid';
-import { habitIcon } from '@/lib/icons';
 import { completedDates, toggleCompletion, type Habit } from '@/store';
 
 import { DottedSeparator } from './DottedSeparator';
@@ -59,11 +58,7 @@ export const HabitCard = observer(function HabitCard({
       onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}>
       <View style={styles.top}>
         <View style={styles.iconWrap}>
-          <SymbolView
-            name={habitIcon(habit.icon)}
-            size={22}
-            tintColor={habit.color ?? theme.colors.ink}
-          />
+          <HabitGlyph icon={habit.icon} size={22} color={habit.color ?? theme.colors.ink} />
         </View>
 
         <View style={styles.info}>

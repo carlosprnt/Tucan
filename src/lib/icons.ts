@@ -8,6 +8,11 @@ export function habitIcon(icon: string | null | undefined): SFSymbol {
   return (icon ?? DEFAULT_HABIT_ICON) as SFSymbol;
 }
 
+/** True when a stored icon is an emoji (rendered as text) vs an SF Symbol. */
+export function isEmojiIcon(icon: string | null | undefined): icon is string {
+  return !!icon && /\p{Extended_Pictographic}/u.test(icon);
+}
+
 /** Starter habit suggestions surfaced on first run / in the create form. */
 export const HABIT_NAME_SUGGESTIONS: { name: string; icon: SFSymbol }[] = [
   { name: 'Drink water', icon: 'drop.fill' },
