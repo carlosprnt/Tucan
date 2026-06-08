@@ -96,8 +96,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       useNativeDriver: true,
     }).start(() => {
       setStep(2);
-      // Reset animation for potential future use
-      stepTransitionAnim.setValue(0);
+      // Don't reset animation - keep it at 1 for step 2
     });
   }
 
@@ -440,7 +439,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           )}
 
           {/* Button 2: Check (Step 2) */}
-          {!isEdit && !onStep1 && (
+          {!isEdit && step === 2 && (
             <Animated.View
               style={{
                 opacity: stepTransitionAnim.interpolate({
