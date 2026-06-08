@@ -41,7 +41,7 @@ const Home = observer(function Home() {
         exiting={EXIT}
         style={styles.item}>
         {overview ? (
-          <OverviewCard habit={item} />
+          <OverviewCard habit={item} onLongPress={drag} />
         ) : (
           <HabitCard habit={item} onLongPress={drag} dragging={isActive} />
         )}

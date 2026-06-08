@@ -1,5 +1,6 @@
 import { observer } from '@legendapp/state/react';
-import { Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitGlyph } from '@/components/HabitGlyph';
@@ -7,14 +8,27 @@ import { YearHeatmap } from '@/components/YearHeatmap';
 import { todayKey } from '@/lib/date';
 import { completedDates, type Habit } from '@/store';
 
-/** Overview row: icon + name + total + the habit's year heatmap. */
-export const OverviewCard = observer(function OverviewCard({ habit }: { habit: Habit }) {
+/** Overview row: icon + name + total + the habit's year heatmap. Tap to open detail. */
+export const OverviewCard = observer(function OverviewCard({
+  habit,
+  onLongPress,
+}: {
+  habit: Habit;
+  onLongPress?: () => void;
+}) {
   const { theme } = useUnistyles();
+  const router = useRouter();
   const today = todayKey();
   const completed = completedDates(habit.id);
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${habit.name}, ${completed.size} days completed`}
+      onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}
+      onLongPress={onLongPress}
+      delayLongPress={220}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.head}>
         <HabitGlyph icon={habit.icon} size={18} color={habit.color ?? theme.colors.ink} />
         <Text style={styles.name} numberOfLines={1}>
@@ -29,7 +43,7 @@ export const OverviewCard = observer(function OverviewCard({ habit }: { habit: H
         color={habit.color}
         activeDays={habit.active_days}
       />
-    </View>
+    </Pressable>
   );
 });
 
@@ -39,6 +53,9 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.radius.lg,
     padding: theme.space.lg,
     gap: theme.space.md,
+  },
+  pressed: {
+    opacity: 0.92,
   },
   head: {
     flexDirection: 'row',
