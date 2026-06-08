@@ -32,7 +32,7 @@ interface MonthCalendarProps {
   onToggleDay: (key: DateKey) => void;
 }
 
-/** Weekday-aligned month grid of diamonds. Cells cascade in; tapping a day
+/** Weekday-aligned month grid (Monday first). Cells cascade in; tapping a day
  *  bounces the glyph and bursts sparkles when it becomes complete. */
 export function MonthCalendar({
   year,
@@ -44,12 +44,6 @@ export function MonthCalendar({
   onToggleDay,
 }: MonthCalendarProps) {
   const [width, setWidth] = useState(0);
-  const sparkleRef = useRef<SparkleBurstHandle>(null);
-  // Position via shared values so it's set synchronously before play() (avoids
-  // the sparkle appearing on the previously tapped cell).
-  const px = useSharedValue(0);
-  const py = useSharedValue(0);
-  const overlayStyle = useAnimatedStyle(() => ({ left: px.value, top: py.value }));
 
   const cellSize = width > 0 ? (width - GAP * 6) / 7 : 0;
   const glyphSize = cellSize * 0.62;
@@ -63,19 +57,6 @@ export function MonthCalendar({
   for (let d = 1; d <= daysInMonth; d++) {
     const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     cells.push({ day: d, key });
-  }
-
-  function handleDay(slot: number, key: DateKey, isDone: boolean) {
-    haptics.light();
-    if (!isDone) {
-      // becoming complete -> sparkle from the cell center
-      const col = slot % 7;
-      const row = Math.floor(slot / 7);
-      px.value = col * (cellSize + GAP) + cellSize / 2;
-      py.value = row * (cellSize + GAP) + cellSize / 2;
-      sparkleRef.current?.play();
-    }
-    onToggleDay(key);
   }
 
   return (
@@ -116,16 +97,10 @@ export function MonthCalendar({
                 tappable={tappable}
                 label={cell.key}
                 isDone={isDone}
-                onPress={() => handleDay(i, cell.key, isDone)}
+                onToggle={() => onToggleDay(cell.key)}
               />
             );
           })}
-
-          <Animated.View
-            pointerEvents="none"
-            style={[{ position: 'absolute', width: 0, height: 0 }, overlayStyle]}>
-            <SparkleBurst ref={sparkleRef} color={color} />
-          </Animated.View>
         </View>
       )}
     </View>
@@ -141,7 +116,7 @@ function DayCell({
   tappable,
   label,
   isDone,
-  onPress,
+  onToggle,
 }: {
   slot: number;
   cellSize: number;
@@ -151,10 +126,11 @@ function DayCell({
   tappable: boolean;
   label: string;
   isDone: boolean;
-  onPress: () => void;
+  onToggle: () => void;
 }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const sparkleRef = useRef<SparkleBurstHandle>(null);
 
   return (
     <Animated.View entering={cascadeIn(slot)} style={{ width: cellSize, height: cellSize }}>
@@ -164,15 +140,16 @@ function DayCell({
         accessibilityLabel={label}
         accessibilityState={{ checked: isDone, disabled: !tappable }}
         onPress={() => {
-          if (tappable) {
-            scale.value = withSequence(
-              withTiming(1.12, { duration: 70 }),
-              withSpring(1, { damping: 18, stiffness: 300 }),
-            );
-          }
-          onPress();
+          haptics.light();
+          scale.value = withSequence(
+            withTiming(1.12, { duration: 70 }),
+            withSpring(1, { damping: 18, stiffness: 300 }),
+          );
+          if (!isDone) sparkleRef.current?.play(); // becoming complete
+          onToggle();
         }}
         style={styles.cell}>
+        <SparkleBurst ref={sparkleRef} color={color} />
         <Animated.View style={animStyle}>
           <Glyph size={glyphSize} state={state} color={color} />
         </Animated.View>
@@ -188,7 +165,6 @@ const styles = StyleSheet.create((theme) => ({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    position: 'relative',
   },
   cell: {
     flex: 1,
