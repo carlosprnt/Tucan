@@ -481,18 +481,19 @@ const styles = StyleSheet.create((theme) => ({
     paddingBottom: theme.space.xl,
   },
   columnWrapper: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: theme.space.xs,
     marginBottom: theme.space.sm,
   },
   emojiCell: {
-    width: '13%',
+    width: '12.5%',
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.radius.md,
   },
   iconCell: {
-    width: '15%',
+    width: '14%',
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
