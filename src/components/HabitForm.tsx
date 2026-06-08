@@ -10,6 +10,7 @@ import {
   Easing,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -412,16 +413,16 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             <Text style={styles.dateText}>{formatDate(startDate)}</Text>
             <SymbolView name="calendar" size={18} tintColor={theme.colors.textSecondary} />
           </Pressable>
-          {showDatePicker && (
+          <PickerPopup visible={showDatePicker} onClose={() => setShowDatePicker(false)}>
             <DateTimePicker
               value={fromDateKey(startDate)}
               mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
               maximumDate={new Date()}
               onChange={onDateChange}
               accentColor={accent}
             />
-          )}
+          </PickerPopup>
         </Field>
 
         {/* Active weekdays */}
@@ -463,7 +464,9 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                 <Text style={styles.dateText}>{formatTime(reminderTime)}</Text>
                 <SymbolView name="clock" size={18} tintColor={theme.colors.textSecondary} />
               </Pressable>
-              {showReminderPicker && (
+              <PickerPopup
+                visible={showReminderPicker}
+                onClose={() => setShowReminderPicker(false)}>
                 <DateTimePicker
                   value={timeToDate(reminderTime)}
                   mode="time"
@@ -471,7 +474,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                   onChange={onReminderTimeChange}
                   accentColor={accent}
                 />
-              )}
+              </PickerPopup>
               <Text style={styles.daysHint}>
                 We&apos;ll nudge you on your active days at this time.
               </Text>
@@ -577,6 +580,41 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <Text style={styles.fieldLabel}>{label}</Text>
       {children}
     </View>
+  );
+}
+
+/**
+ * Shows a date/time picker as a centered popup on iOS (tap-outside or Done to
+ * dismiss). On Android the native picker is already a dialog, so the child is
+ * rendered directly when visible.
+ */
+function PickerPopup({
+  visible,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  if (Platform.OS !== 'ios') {
+    return visible ? <>{children}</> : null;
+  }
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.popupBackdrop} onPress={onClose}>
+        <Pressable style={styles.popupCard} onPress={() => {}}>
+          {children}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Done"
+            onPress={onClose}
+            style={({ pressed }) => [styles.popupDone, pressed && styles.pressed]}>
+            <Text style={styles.popupDoneText}>Done</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -836,5 +874,31 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   pressed: {
     opacity: 0.7,
+  },
+  popupBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.space.xl,
+  },
+  popupCard: {
+    width: '100%',
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.lg,
+    padding: theme.space.md,
+  },
+  popupDone: {
+    marginTop: theme.space.sm,
+    height: 48,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  popupDoneText: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.canvas,
   },
 }));
