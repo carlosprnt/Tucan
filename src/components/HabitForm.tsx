@@ -3,11 +3,10 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Animated,
-  Easing,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -57,39 +56,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
-  const animatedKeyboardHeight = useRef(new Animated.Value(0)).current;
-  const stepTransitionAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // On iOS, `will` events fire before the keyboard animates, so the FAB
-    // rides up in sync with it. Match the system animation duration AND the
-    // keyboard's easing curve (iOS curve 7 ≈ this bezier) so they move as one.
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const keyboardEasing = Easing.bezier(0.17, 0.59, 0.4, 0.77);
-
-    const showSub = Keyboard.addListener(showEvent, (e) => {
-      Animated.timing(animatedKeyboardHeight, {
-        toValue: e.endCoordinates.height,
-        duration: e.duration || 250,
-        easing: keyboardEasing,
-        useNativeDriver: false,
-      }).start();
-    });
-    const hideSub = Keyboard.addListener(hideEvent, (e) => {
-      Animated.timing(animatedKeyboardHeight, {
-        toValue: 0,
-        duration: e.duration || 250,
-        easing: keyboardEasing,
-        useNativeDriver: false,
-      }).start();
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [animatedKeyboardHeight]);
+  const [stepTransitionAnim] = useState(() => new Animated.Value(0));
 
   // Two-step create: step 1 is just the name; edit shows everything at once.
   const onStep1 = !isEdit && step === 1;
@@ -409,62 +376,57 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       </KeyboardAvoidingView>
 
       {(onStep1 || !isEdit) && (
-        <Animated.View
-          style={[
-            styles.fabBar,
-            {
-              transform: [
-                {
-                  translateY: Animated.multiply(animatedKeyboardHeight, -1),
-                },
-              ],
-            },
-          ]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={onStep1 ? 'Next' : 'Save'}
-            disabled={!canSave}
-            onPress={onStep1 ? goNext : onSave}
-            style={({ pressed }) => [
-              styles.nextFab,
-              !canSave && styles.nextFabDisabled,
-              pressed && styles.pressed,
-            ]}>
-            {/* Arrow icon - fades out */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: stepTransitionAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 0],
-                }),
-              }}>
-              <SymbolView
-                name="arrow.right"
-                size={26}
-                weight="bold"
-                tintColor={theme.colors.canvas}
-              />
-            </Animated.View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.fabKav}
+          pointerEvents="box-none">
+          <View style={styles.fabBar} pointerEvents="box-none">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={onStep1 ? 'Next' : 'Save'}
+              disabled={!canSave}
+              onPress={onStep1 ? goNext : onSave}
+              style={({ pressed }) => [
+                styles.nextFab,
+                !canSave && styles.nextFabDisabled,
+                pressed && styles.pressed,
+              ]}>
+              {/* Arrow icon - fades out */}
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  opacity: stepTransitionAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0],
+                  }),
+                }}>
+                <SymbolView
+                  name="arrow.right"
+                  size={26}
+                  weight="bold"
+                  tintColor={theme.colors.canvas}
+                />
+              </Animated.View>
 
-            {/* Checkmark icon - fades in */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: stepTransitionAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 1],
-                }),
-              }}>
-              <SymbolView
-                name="checkmark"
-                size={26}
-                weight="bold"
-                tintColor={theme.colors.canvas}
-              />
-            </Animated.View>
-          </Pressable>
-        </Animated.View>
+              {/* Checkmark icon - fades in */}
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  opacity: stepTransitionAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 1],
+                  }),
+                }}>
+                <SymbolView
+                  name="checkmark"
+                  size={26}
+                  weight="bold"
+                  tintColor={theme.colors.canvas}
+                />
+              </Animated.View>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
       )}
 
       <IconColorPickerModal
@@ -541,11 +503,18 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingBottom: rt.insets.bottom + theme.space.xxxl,
     gap: theme.space.xl,
   },
-  fabBar: {
+  fabKav: {
     position: 'absolute',
-    right: 20,
-    bottom: 20,
+    left: 0,
+    right: 0,
+    bottom: 0,
     zIndex: 10,
+    justifyContent: 'flex-end',
+  },
+  fabBar: {
+    alignItems: 'flex-end',
+    paddingRight: 20,
+    paddingBottom: 20,
   },
   nextFab: {
     width: 56,

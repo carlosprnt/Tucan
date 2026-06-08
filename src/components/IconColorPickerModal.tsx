@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { HABIT_ICON_SUGGESTIONS } from '@/lib/icons';
 import { HABIT_COLORS } from '@/lib/colors';
 import { haptics } from '@/lib/haptics';
 
@@ -77,7 +76,7 @@ export function IconColorPickerModal({
 
         {/* Tabs */}
         <View style={styles.tabBar}>
-          {(Object.keys(EMOJI_CATEGORIES) as Array<keyof typeof EMOJI_CATEGORIES>).map((t) => (
+          {(Object.keys(EMOJI_CATEGORIES) as (keyof typeof EMOJI_CATEGORIES)[]).map((t) => (
             <Pressable
               key={t}
               onPress={() => {
