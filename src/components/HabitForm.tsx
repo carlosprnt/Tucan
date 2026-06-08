@@ -41,6 +41,8 @@ import {
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function HabitForm({ habitId }: { habitId?: string }) {
   const router = useRouter();
   const { theme } = useUnistyles();
@@ -59,6 +61,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [stepTransitionAnim] = useState(() => new Animated.Value(0));
+  const [fabScale] = useState(() => new Animated.Value(1));
   // Tracks keyboard height to float the FAB above it. The reported height
   // includes the QuickType suggestions bar, and we drive it on the native
   // thread (useNativeDriver) so the motion stays frame-perfect with no lag.
@@ -428,15 +431,29 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             styles.fabBar,
             { transform: [{ translateY: Animated.multiply(keyboardHeight, -1) }] },
           ]}>
-          <Pressable
+          <AnimatedPressable
             accessibilityRole="button"
             accessibilityLabel={onStep1 ? 'Next' : 'Save'}
             disabled={!canSave}
             onPress={onStep1 ? goNext : onSave}
-            style={({ pressed }) => [
+            onPressIn={() => {
+              Animated.timing(fabScale, {
+                toValue: 1.3,
+                duration: 120,
+                useNativeDriver: true,
+              }).start();
+            }}
+            onPressOut={() => {
+              Animated.timing(fabScale, {
+                toValue: 1,
+                duration: 120,
+                useNativeDriver: true,
+              }).start();
+            }}
+            style={[
               styles.nextFab,
               !canSave && styles.nextFabDisabled,
-              pressed && styles.pressed,
+              { transform: [{ scale: fabScale }] },
             ]}>
             {/* Arrow icon - fades out */}
             <Animated.View
@@ -471,7 +488,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                 tintColor={theme.colors.canvas}
               />
             </Animated.View>
-          </Pressable>
+          </AnimatedPressable>
         </Animated.View>
       )}
 
