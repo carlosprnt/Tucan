@@ -6,6 +6,7 @@ import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useState } from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -52,6 +53,17 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [activeDays, setActiveDays] = useState(existing?.active_days ?? ALL_DAYS);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [iconsExpanded, setIconsExpanded] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
+
+  // Two-step create: step 1 is just the name; edit shows everything at once.
+  const onStep1 = !isEdit && step === 1;
+
+  function goNext() {
+    if (!canSave) return;
+    haptics.selection();
+    Keyboard.dismiss();
+    setStep(2);
+  }
 
   function toggleDay(i: number) {
     haptics.selection();
@@ -128,50 +140,82 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.header}>
-        <Pressable hitSlop={10} onPress={() => router.back()}>
-          <Text style={styles.cancel}>Cancel</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>{isEdit ? 'Edit habit' : 'New habit'}</Text>
-        <Pressable hitSlop={10} disabled={!canSave} onPress={onSave}>
-          <Text style={[styles.save, !canSave && styles.saveDisabled]}>Save</Text>
-        </Pressable>
+        {onStep1 ? (
+          <Pressable hitSlop={10} onPress={() => router.back()}>
+            <Text style={styles.cancel}>Cancel</Text>
+          </Pressable>
+        ) : (
+          <Pressable hitSlop={10} onPress={() => (isEdit ? router.back() : setStep(1))}>
+            {isEdit ? (
+              <Text style={styles.cancel}>Cancel</Text>
+            ) : (
+              <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
+            )}
+          </Pressable>
+        )}
+
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {isEdit ? 'Edit habit' : onStep1 ? 'New habit' : name.trim() || 'New habit'}
+        </Text>
+
+        {onStep1 ? (
+          <Pressable hitSlop={10} disabled={!canSave} onPress={goNext}>
+            <Text style={[styles.save, !canSave && styles.saveDisabled]}>Next</Text>
+          </Pressable>
+        ) : (
+          <Pressable hitSlop={10} disabled={!canSave} onPress={onSave}>
+            <Text style={[styles.save, !canSave && styles.saveDisabled]}>Save</Text>
+          </Pressable>
+        )}
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        {/* Name */}
-        <Field label="Name">
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Drink water"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.input}
-            autoFocus={!isEdit}
-            returnKeyType="done"
-          />
-        </Field>
-
-        {!isEdit && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            style={styles.suggestionsScroll}
-            contentContainerStyle={styles.suggestions}>
-            {HABIT_NAME_SUGGESTIONS.map((s) => (
-              <Pressable
-                key={s.name}
-                style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-                onPress={() => pickSuggestion(s)}>
-                <SymbolView name={s.icon} size={15} tintColor={theme.colors.textSecondary} />
-                <Text style={styles.chipText}>{s.name}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
+        {onStep1 ? (
+          <View style={styles.step1}>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Habit name"
+              placeholderTextColor={theme.colors.textMuted}
+              style={styles.xxlInput}
+              autoFocus
+              maxLength={40}
+              returnKeyType="next"
+              onSubmitEditing={goNext}
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.suggestions}>
+              {HABIT_NAME_SUGGESTIONS.map((s) => (
+                <Pressable
+                  key={s.name}
+                  style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+                  onPress={() => pickSuggestion(s)}>
+                  <SymbolView name={s.icon} size={15} tintColor={theme.colors.textSecondary} />
+                  <Text style={styles.chipText}>{s.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : (
+          <>
+            {isEdit && (
+              <Field label="Name">
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="e.g. Drink water"
+                  placeholderTextColor={theme.colors.textMuted}
+                  style={styles.input}
+                  returnKeyType="done"
+                />
+              </Field>
+            )}
 
         {/* Description */}
         <Field label="Description">
@@ -300,12 +344,14 @@ export function HabitForm({ habitId }: { habitId?: string }) {
           <Text style={styles.daysHint}>Tap to turn days off — they won&apos;t count.</Text>
         </Field>
 
-        {isEdit && (
-          <Pressable
-            style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
-            onPress={onDelete}>
-            <Text style={styles.deleteText}>Delete habit</Text>
-          </Pressable>
+            {isEdit && (
+              <Pressable
+                style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
+                onPress={onDelete}>
+                <Text style={styles.deleteText}>Delete habit</Text>
+              </Pressable>
+            )}
+          </>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -383,8 +429,16 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingVertical: theme.space.md,
     minHeight: 48,
   },
-  suggestionsScroll: {
-    marginTop: -theme.space.md,
+  step1: {
+    gap: theme.space.xl,
+    paddingTop: theme.space.lg,
+  },
+  xxlInput: {
+    fontSize: 40,
+    fontWeight: theme.weight.bold,
+    letterSpacing: -1,
+    color: theme.colors.textPrimary,
+    paddingVertical: theme.space.sm,
   },
   suggestions: {
     flexDirection: 'row',
