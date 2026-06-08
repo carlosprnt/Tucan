@@ -3,9 +3,10 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -55,21 +56,29 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const animatedKeyboardHeight = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
+      Animated.timing(animatedKeyboardHeight, {
+        toValue: e.endCoordinates.height,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardHeight(0);
+      Animated.timing(animatedKeyboardHeight, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
     });
 
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [animatedKeyboardHeight]);
 
   // Two-step create: step 1 is just the name; edit shows everything at once.
   const onStep1 = !isEdit && step === 1;
@@ -371,7 +380,17 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       </KeyboardAvoidingView>
 
       {(onStep1 || !isEdit) && (
-        <View style={[styles.fabBar, { bottom: Math.max(keyboardHeight, 0) + 20 }]}>
+        <Animated.View
+          style={[
+            styles.fabBar,
+            {
+              transform: [
+                {
+                  translateY: Animated.multiply(animatedKeyboardHeight, -1),
+                },
+              ],
+            },
+          ]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={onStep1 ? 'Next' : 'Save'}
@@ -389,7 +408,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               tintColor={theme.colors.canvas}
             />
           </Pressable>
-        </View>
+        </Animated.View>
       )}
 
       <IconColorPickerModal
