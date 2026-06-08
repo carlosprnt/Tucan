@@ -141,7 +141,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const quickIcons: (SFSymbol | string)[] = [
     icon,
     ...HABIT_ICON_SUGGESTIONS.map((o) => o.key).filter((k) => k !== icon),
-  ].slice(0, 9);
+  ].slice(0, 16);
 
   function pickSuggestion(s: { name: string; icon: SFSymbol }) {
     haptics.selection();
@@ -325,22 +325,18 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                 </Pressable>
               );
             })}
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Show all icons"
-              onPress={() => {
-                haptics.selection();
-                setShowIconColorPicker(true);
-              }}
-              style={styles.iconCell}>
-              <SymbolView
-                name="ellipsis"
-                size={20}
-                tintColor={theme.colors.textSecondary}
-              />
-            </Pressable>
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View more icons"
+            onPress={() => {
+              haptics.selection();
+              setShowIconColorPicker(true);
+            }}
+            style={({ pressed }) => [styles.viewMore, pressed && styles.pressed]}>
+            <Text style={styles.viewMoreText}>View more</Text>
+          </Pressable>
         </Field>
 
         {/* Color */}
@@ -667,6 +663,19 @@ const styles = StyleSheet.create((theme, rt) => ({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: theme.space.sm,
+  },
+  viewMore: {
+    marginTop: theme.space.md,
+    alignSelf: 'flex-start',
+    paddingVertical: theme.space.sm,
+    paddingHorizontal: theme.space.lg,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.card,
+  },
+  viewMoreText: {
+    fontSize: theme.font.caption,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.textPrimary,
   },
   iconCell: {
     width: 52,
