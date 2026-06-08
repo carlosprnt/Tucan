@@ -488,6 +488,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   fabBar: {
     position: 'absolute',
     right: 20,
+    bottom: 20,
     zIndex: 10,
   },
   nextFab: {
