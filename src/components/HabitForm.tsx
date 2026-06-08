@@ -48,7 +48,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
   const [name, setName] = useState(existing?.name ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
-  const [icon, setIcon] = useState<SFSymbol>(habitIcon(existing?.icon));
+  const [icon, setIcon] = useState<SFSymbol | string>(habitIcon(existing?.icon));
   const [color, setColor] = useState<string | null>(existing?.color ?? null);
   const [startDate, setStartDate] = useState<DateKey>(existing?.start_date ?? todayKey());
   const [activeDays, setActiveDays] = useState(existing?.active_days ?? ALL_DAYS);
@@ -397,7 +397,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
         currentIcon={icon}
         onSelect={(selected) => {
           haptics.selection();
-          setIcon(selected as SFSymbol);
+          setIcon(selected);
           setShowIconPicker(false);
         }}
         onClose={() => setShowIconPicker(false)}
