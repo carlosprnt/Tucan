@@ -276,7 +276,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.xs,
     height: 44,
     paddingLeft: theme.space.sm,
-    paddingRight: theme.space.md,
+    paddingRight: theme.space.lg,
   },
   viewToggleLabel: {
     fontSize: theme.font.body,
