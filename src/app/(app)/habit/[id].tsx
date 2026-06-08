@@ -11,7 +11,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { cascadeIn } from '@/lib/anim';
-import { fromDateKey, todayKey } from '@/lib/date';
+import { addDays, daysBetween, fromDateKey, todayKey, type DateKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import {
   completedDates,
@@ -109,7 +109,13 @@ const HabitDetail = observer(function HabitDetail() {
             <Text style={styles.hint}>Tap any past day to fill it in.</Text>
           </View>
         ) : (
-          <Accumulation total={stats.total} percent={stats.percent} accent={accent} />
+          <Accumulation
+            completed={completed}
+            startDate={habit.start_date}
+            today={today}
+            percent={stats.percent}
+            accent={accent}
+          />
         )}
       </ScrollView>
     </View>
@@ -122,27 +128,34 @@ const CELL = 12;
 const GAP = 6;
 
 function Accumulation({
-  total,
+  completed,
+  startDate,
+  today,
   percent,
   accent,
 }: {
-  total: number;
+  completed: Set<DateKey>;
+  startDate: DateKey;
+  today: DateKey;
   percent: number;
   accent: string;
 }) {
+  // Every day from start through today: done (accent) or not done (gray).
+  const count = Math.max(1, daysBetween(startDate, today) + 1);
+
   return (
     <View style={styles.section}>
-      {total === 0 ? (
-        <Text style={styles.missing}>No dots yet — mark today done to start.</Text>
-      ) : (
-        <View style={[styles.accGrid, { gap: GAP }]}>
-          {Array.from({ length: total }, (_, i) => (
+      <View style={[styles.accGrid, { gap: GAP }]}>
+        {Array.from({ length: count }, (_, i) => {
+          const key = addDays(startDate, i);
+          const done = completed.has(key);
+          return (
             <Animated.View key={i} entering={cascadeIn(i)} style={{ width: CELL, height: CELL }}>
-              <Glyph size={CELL} state="done" color={accent} />
+              <Glyph size={CELL} state={done ? 'done' : 'missed'} color={accent} />
             </Animated.View>
-          ))}
-        </View>
-      )}
+          );
+        })}
+      </View>
       <Text style={styles.accFooter}>{percent}% of days since you started</Text>
     </View>
   );
