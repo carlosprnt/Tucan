@@ -28,6 +28,7 @@ export const OverviewCard = observer(function OverviewCard({ habit }: { habit: H
         startDate={habit.start_date}
         today={today}
         color={habit.color}
+        activeDays={habit.active_days}
       />
     </View>
   );

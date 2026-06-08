@@ -45,6 +45,7 @@ export const HabitCard = observer(function HabitCard({
           startDate: habit.start_date,
           days: columns * GRID_ROWS,
           today,
+          activeDays: habit.active_days,
         })
       : [];
 

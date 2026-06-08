@@ -130,7 +130,7 @@ const Summary = observer(function Summary({ habits }: { habits: Habit[] }) {
   const totalAll = habits.reduce((sum, h) => sum + totalForHabit(h.id), 0);
   const avgPercent = habits.length
     ? Math.round(
-        habits.reduce((sum, h) => sum + statsForHabit(h.id, h.start_date).percent, 0) /
+        habits.reduce((sum, h) => sum + statsForHabit(h.id, h.start_date, h.active_days).percent, 0) /
           habits.length,
       )
     : 0;

@@ -75,18 +75,22 @@ function seedPreview(): void {
   const now = new Date().toISOString();
   const today = todayKey();
 
+  const ALL = 0b1111111;
+  const WEEKDAYS = 0b0011111; // Mon-Fri
+
   const defs: {
     name: string;
     icon: string;
     color: string | null;
     days: number; // history length
     p: number; // completion probability
+    activeDays: number;
   }[] = [
-    { name: 'Drink water', icon: 'drop.fill', color: null, days: 64, p: 0.86 },
-    { name: 'Exercise', icon: 'figure.run', color: '#E5484D', days: 96, p: 0.5 },
-    { name: 'Read', icon: 'book.fill', color: null, days: 130, p: 0.72 },
-    { name: 'Meditate', icon: 'brain.head.profile', color: '#6E56CF', days: 220, p: 0.6 },
-    { name: 'Sleep early', icon: 'moon.fill', color: null, days: 28, p: 0.45 },
+    { name: 'Drink water', icon: 'drop.fill', color: null, days: 64, p: 0.86, activeDays: ALL },
+    { name: 'Exercise', icon: 'figure.run', color: '#E5484D', days: 96, p: 0.5, activeDays: WEEKDAYS },
+    { name: 'Read', icon: 'book.fill', color: null, days: 130, p: 0.72, activeDays: ALL },
+    { name: 'Meditate', icon: 'brain.head.profile', color: '#6E56CF', days: 220, p: 0.6, activeDays: ALL },
+    { name: 'Sleep early', icon: 'moon.fill', color: null, days: 28, p: 0.45, activeDays: ALL },
   ];
 
   defs.forEach((d, idx) => {
@@ -100,6 +104,7 @@ function seedPreview(): void {
       icon: d.icon,
       color: d.color,
       start_date: startDate,
+      active_days: d.activeDays,
       sort_order: idx,
       archived_at: null,
       created_at: now,

@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { fromDateKey, toDateKey, todayKey, type DateKey } from '@/lib/date';
+import { ALL_DAYS, fromDateKey, toDateKey, todayKey, type DateKey } from '@/lib/date';
 import { HABIT_COLORS } from '@/lib/colors';
 import { haptics } from '@/lib/haptics';
 import {
@@ -32,6 +32,10 @@ import {
   updateHabit,
 } from '@/store';
 
+// Monday-first, matching the calendar and the active_days bitmask (bit0 = Mon).
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
 export function HabitForm({ habitId }: { habitId?: string }) {
   const router = useRouter();
   const { theme } = useUnistyles();
@@ -45,7 +49,17 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [icon, setIcon] = useState<SFSymbol>(habitIcon(existing?.icon));
   const [color, setColor] = useState<string | null>(existing?.color ?? null);
   const [startDate, setStartDate] = useState<DateKey>(existing?.start_date ?? todayKey());
+  const [activeDays, setActiveDays] = useState(existing?.active_days ?? ALL_DAYS);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [iconsExpanded, setIconsExpanded] = useState(false);
+
+  function toggleDay(i: number) {
+    haptics.selection();
+    setActiveDays((prev) => {
+      const next = prev ^ (1 << i);
+      return next === 0 ? prev : next; // keep at least one day
+    });
+  }
 
   const accent = color ?? theme.colors.ink;
   const canSave = name.trim().length > 0;
@@ -82,6 +96,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       icon,
       color,
       start_date: startDate,
+      active_days: activeDays,
     };
     if (isEdit && habitId) {
       updateHabit(habitId, payload);
@@ -140,7 +155,12 @@ export function HabitForm({ habitId }: { habitId?: string }) {
         </Field>
 
         {!isEdit && (
-          <View style={styles.suggestions}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            style={styles.suggestionsScroll}
+            contentContainerStyle={styles.suggestions}>
             {HABIT_NAME_SUGGESTIONS.map((s) => (
               <Pressable
                 key={s.name}
@@ -150,7 +170,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                 <Text style={styles.chipText}>{s.name}</Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         )}
 
         {/* Description */}
@@ -168,7 +188,10 @@ export function HabitForm({ habitId }: { habitId?: string }) {
         {/* Icon */}
         <Field label="Icon">
           <View style={styles.iconRow}>
-            {HABIT_ICON_SUGGESTIONS.map((opt) => {
+            {(iconsExpanded
+              ? HABIT_ICON_SUGGESTIONS
+              : HABIT_ICON_SUGGESTIONS.slice(0, 9)
+            ).map((opt) => {
               const selected = opt.key === icon;
               return (
                 <Pressable
@@ -189,6 +212,21 @@ export function HabitForm({ habitId }: { habitId?: string }) {
                 </Pressable>
               );
             })}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={iconsExpanded ? 'Show fewer icons' : 'Show more icons'}
+              onPress={() => {
+                haptics.selection();
+                setIconsExpanded((e) => !e);
+              }}
+              style={styles.iconCell}>
+              <SymbolView
+                name={iconsExpanded ? 'chevron.up' : 'ellipsis'}
+                size={20}
+                tintColor={theme.colors.textSecondary}
+              />
+            </Pressable>
           </View>
         </Field>
 
@@ -239,6 +277,27 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               accentColor={accent}
             />
           )}
+        </Field>
+
+        {/* Active weekdays */}
+        <Field label="Days">
+          <View style={styles.daysRow}>
+            {DAY_LABELS.map((d, i) => {
+              const on = ((activeDays >> i) & 1) === 1;
+              return (
+                <Pressable
+                  key={i}
+                  accessibilityRole="button"
+                  accessibilityLabel={DAY_NAMES[i]}
+                  accessibilityState={{ selected: on }}
+                  onPress={() => toggleDay(i)}
+                  style={[styles.dayPill, on ? { backgroundColor: accent } : styles.dayPillOff]}>
+                  <Text style={[styles.dayText, on && { color: theme.colors.canvas }]}>{d}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.daysHint}>Tap to turn days off — they won&apos;t count.</Text>
         </Field>
 
         {isEdit && (
@@ -324,11 +383,37 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingVertical: theme.space.md,
     minHeight: 48,
   },
+  suggestionsScroll: {
+    marginTop: -theme.space.md,
+  },
   suggestions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: theme.space.sm,
-    marginTop: -theme.space.md,
+    paddingRight: theme.space.lg,
+  },
+  daysRow: {
+    flexDirection: 'row',
+    gap: theme.space.sm,
+  },
+  dayPill: {
+    flex: 1,
+    height: 44,
+    borderRadius: theme.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayPillOff: {
+    backgroundColor: theme.colors.card,
+  },
+  dayText: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.textSecondary,
+  },
+  daysHint: {
+    fontSize: theme.font.caption,
+    color: theme.colors.textMuted,
   },
   chip: {
     flexDirection: 'row',

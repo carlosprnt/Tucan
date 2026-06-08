@@ -10,7 +10,7 @@ import Animated, {
 import { StyleSheet } from 'react-native-unistyles';
 
 import { cascadeIn } from '@/lib/anim';
-import { daysBetween, type DateKey } from '@/lib/date';
+import { ALL_DAYS, daysBetween, isActiveDay, type DateKey } from '@/lib/date';
 import type { DotState } from '@/lib/grid';
 import { haptics } from '@/lib/haptics';
 
@@ -29,6 +29,7 @@ interface MonthCalendarProps {
   startDate: DateKey;
   today: DateKey;
   color?: string | null;
+  activeDays?: number;
   onToggleDay: (key: DateKey) => void;
 }
 
@@ -41,6 +42,7 @@ export function MonthCalendar({
   startDate,
   today,
   color,
+  activeDays = ALL_DAYS,
   onToggleDay,
 }: MonthCalendarProps) {
   const [width, setWidth] = useState(0);
@@ -76,9 +78,10 @@ export function MonthCalendar({
 
             const isFuture = daysBetween(today, cell.key) > 0;
             const beforeStart = daysBetween(startDate, cell.key) < 0;
+            const inactive = !isActiveDay(activeDays, cell.key);
             const isDone = completed.has(cell.key);
-            const tappable = !isFuture && !beforeStart;
-            const state: DotState = beforeStart
+            const tappable = !isFuture && !beforeStart && !inactive;
+            const state: DotState = beforeStart || inactive
               ? 'empty'
               : isFuture
                 ? 'future'

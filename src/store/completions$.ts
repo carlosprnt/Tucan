@@ -1,6 +1,13 @@
 import { observable } from '@legendapp/state';
 
-import { elapsedDaysInclusive, type DateKey } from '@/lib/date';
+import {
+  addDays,
+  ALL_DAYS,
+  daysBetween,
+  isActiveDay,
+  todayKey,
+  type DateKey,
+} from '@/lib/date';
 import { uuidv4 } from '@/lib/id';
 import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
@@ -89,11 +96,25 @@ export interface HabitStats {
   percent: number;
 }
 
-export function statsForHabit(habitId: string, startDate: DateKey): HabitStats {
+/** Count of active weekdays from startDate through today (>= 1). */
+function activeDaysElapsed(startDate: DateKey, activeDays: number): number {
+  const span = Math.max(0, daysBetween(startDate, todayKey()));
+  let count = 0;
+  for (let i = 0; i <= span; i++) {
+    if (isActiveDay(activeDays, addDays(startDate, i))) count++;
+  }
+  return Math.max(1, count);
+}
+
+export function statsForHabit(
+  habitId: string,
+  startDate: DateKey,
+  activeDays: number = ALL_DAYS,
+): HabitStats {
   const total = totalForHabit(habitId);
   const percent = Math.min(
     100,
-    Math.round((total / elapsedDaysInclusive(startDate)) * 100),
+    Math.round((total / activeDaysElapsed(startDate, activeDays)) * 100),
   );
   return { total, percent };
 }

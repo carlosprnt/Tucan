@@ -11,7 +11,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { cascadeIn } from '@/lib/anim';
-import { addDays, daysBetween, fromDateKey, todayKey, type DateKey } from '@/lib/date';
+import { addDays, daysBetween, fromDateKey, isActiveDay, todayKey, type DateKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import {
   completedDates,
@@ -58,7 +58,7 @@ const HabitDetail = observer(function HabitDetail() {
 
   const today = todayKey();
   const completed = completedDates(habit.id);
-  const stats = statsForHabit(habit.id, habit.start_date);
+  const stats = statsForHabit(habit.id, habit.start_date, habit.active_days);
   const accent = habit.color ?? theme.colors.ink;
 
   function shiftMonth(delta: number) {
@@ -104,6 +104,7 @@ const HabitDetail = observer(function HabitDetail() {
               startDate={habit.start_date}
               today={today}
               color={habit.color}
+              activeDays={habit.active_days}
               onToggleDay={(key) => toggleCompletion(habit.id, key)}
             />
             <Text style={styles.hint}>Tap any past day to fill it in.</Text>
@@ -113,6 +114,7 @@ const HabitDetail = observer(function HabitDetail() {
             completed={completed}
             startDate={habit.start_date}
             today={today}
+            activeDays={habit.active_days}
             percent={stats.percent}
             accent={accent}
           />
@@ -131,30 +133,33 @@ function Accumulation({
   completed,
   startDate,
   today,
+  activeDays,
   percent,
   accent,
 }: {
   completed: Set<DateKey>;
   startDate: DateKey;
   today: DateKey;
+  activeDays: number;
   percent: number;
   accent: string;
 }) {
-  // Every day from start through today: done (accent) or not done (gray).
+  // Every ACTIVE day from start through today: done (accent) or not done (gray).
   const count = Math.max(1, daysBetween(startDate, today) + 1);
+  const days: DateKey[] = [];
+  for (let i = 0; i < count; i++) {
+    const key = addDays(startDate, i);
+    if (isActiveDay(activeDays, key)) days.push(key);
+  }
 
   return (
     <View style={styles.section}>
       <View style={[styles.accGrid, { gap: GAP }]}>
-        {Array.from({ length: count }, (_, i) => {
-          const key = addDays(startDate, i);
-          const done = completed.has(key);
-          return (
-            <Animated.View key={i} entering={cascadeIn(i)} style={{ width: CELL, height: CELL }}>
-              <Glyph size={CELL} state={done ? 'done' : 'missed'} color={accent} />
-            </Animated.View>
-          );
-        })}
+        {days.map((key, i) => (
+          <Animated.View key={key} entering={cascadeIn(i)} style={{ width: CELL, height: CELL }}>
+            <Glyph size={CELL} state={completed.has(key) ? 'done' : 'missed'} color={accent} />
+          </Animated.View>
+        ))}
       </View>
       <Text style={styles.accFooter}>{percent}% of days since you started</Text>
     </View>

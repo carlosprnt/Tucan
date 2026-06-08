@@ -1,6 +1,6 @@
 import { observable, type Observable } from '@legendapp/state';
 
-import { todayKey } from '@/lib/date';
+import { ALL_DAYS, todayKey } from '@/lib/date';
 import { uuidv4 } from '@/lib/id';
 import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
@@ -43,6 +43,7 @@ export interface NewHabitInput {
   icon?: string | null;
   color?: string | null;
   start_date?: string;
+  active_days?: number;
 }
 
 /** Optimistically create a habit (synced in the background). Returns its id, or '' if signed out. */
@@ -59,6 +60,7 @@ export function createHabit(input: NewHabitInput): string {
     icon: input.icon ?? null,
     color: input.color ?? null,
     start_date: input.start_date ?? todayKey(),
+    active_days: input.active_days ?? ALL_DAYS,
     sort_order: listHabits().length,
     archived_at: null,
     created_at: now,
@@ -70,7 +72,10 @@ export function createHabit(input: NewHabitInput): string {
 }
 
 export type HabitPatch = Partial<
-  Pick<Habit, 'name' | 'description' | 'icon' | 'color' | 'start_date' | 'sort_order'>
+  Pick<
+    Habit,
+    'name' | 'description' | 'icon' | 'color' | 'start_date' | 'sort_order' | 'active_days'
+  >
 >;
 
 export function updateHabit(id: string, patch: HabitPatch): void {

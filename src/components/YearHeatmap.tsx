@@ -3,7 +3,14 @@ import { ScrollView } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useUnistyles } from 'react-native-unistyles';
 
-import { addDays, daysBetween, fromDateKey, type DateKey } from '@/lib/date';
+import {
+  addDays,
+  ALL_DAYS,
+  daysBetween,
+  fromDateKey,
+  isActiveDay,
+  type DateKey,
+} from '@/lib/date';
 import { diamondPath } from '@/lib/glyph';
 
 const CELL = 10;
@@ -15,10 +22,17 @@ interface YearHeatmapProps {
   startDate: DateKey;
   today: DateKey;
   color?: string | null;
+  activeDays?: number;
 }
 
 /** Year grid of diamonds (weeks × 7), newest on the right. One <Svg> for perf. */
-export function YearHeatmap({ completed, startDate, today, color }: YearHeatmapProps) {
+export function YearHeatmap({
+  completed,
+  startDate,
+  today,
+  color,
+  activeDays = ALL_DAYS,
+}: YearHeatmapProps) {
   const { theme } = useUnistyles();
   const scrollRef = useRef<ScrollView>(null);
   const accent = color ?? theme.colors.dotDone;
@@ -37,7 +51,7 @@ export function YearHeatmap({ completed, startDate, today, color }: YearHeatmapP
       const key = addDays(first, w * 7 + d);
       const isFuture = daysBetween(today, key) > 0;
       const beforeStart = daysBetween(startDate, key) < 0;
-      if (beforeStart) continue;
+      if (beforeStart || !isActiveDay(activeDays, key)) continue;
       const isDone = completed.has(key);
       const x = w * (CELL + GAP);
       const y = d * (CELL + GAP);

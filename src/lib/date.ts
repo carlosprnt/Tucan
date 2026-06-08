@@ -9,6 +9,19 @@
 /** A local day key, e.g. "2026-06-06". */
 export type DateKey = string;
 
+/** Bitmask of all weekdays active (Mon=bit0 ... Sun=bit6). */
+export const ALL_DAYS = 0b1111111;
+
+/** Weekday index for a date, Monday = 0 ... Sunday = 6. */
+export function weekdayIndex(key: DateKey): number {
+  return (fromDateKey(key).getDay() + 6) % 7;
+}
+
+/** True if `key`'s weekday is enabled in the `activeDays` bitmask. */
+export function isActiveDay(activeDays: number, key: DateKey): boolean {
+  return ((activeDays >> weekdayIndex(key)) & 1) === 1;
+}
+
 /** Format a Date as a local-day key (uses the device timezone). */
 export function toDateKey(date: Date): DateKey {
   const y = date.getFullYear();
