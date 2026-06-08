@@ -79,10 +79,7 @@ const HabitDetail = observer(function HabitDetail() {
                 onBack={() => router.back()}
                 onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
               />
-              <View style={styles.stats}>
-                <Stat value={String(stats.total)} label="completed" />
-                <Stat value={`${stats.percent}%`} label="since start" />
-              </View>
+              <Summary total={stats.total} percent={stats.percent} />
               <Text style={styles.hint}>Tap any past day to fill it in.</Text>
             </View>
           }
@@ -113,16 +110,12 @@ const HabitDetail = observer(function HabitDetail() {
             onBack={() => router.back()}
             onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
           />
-          <View style={styles.stats}>
-            <Stat value={String(stats.total)} label="completed" />
-            <Stat value={`${stats.percent}%`} label="since start" />
-          </View>
+          <Summary total={stats.total} percent={stats.percent} />
           <Accumulation
             completed={completed}
             startDate={habit.start_date}
             today={today}
             activeDays={habit.active_days}
-            percent={stats.percent}
             accent={accent}
           />
         </ScrollView>
@@ -141,14 +134,12 @@ function Accumulation({
   startDate,
   today,
   activeDays,
-  percent,
   accent,
 }: {
   completed: Set<DateKey>;
   startDate: DateKey;
   today: DateKey;
   activeDays: number;
-  percent: number;
   accent: string;
 }) {
   // Every ACTIVE day from start through today: done (accent) or not done (gray).
@@ -168,7 +159,6 @@ function Accumulation({
           </Animated.View>
         ))}
       </View>
-      <Text style={styles.accFooter}>{percent}% of days since you started</Text>
     </View>
   );
 }
@@ -202,11 +192,16 @@ function Header({
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+/** Two muted sentences with the number/percent emphasized in ink. */
+function Summary({ total, percent }: { total: number; percent: number }) {
   return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={styles.summary}>
+      <Text style={styles.summaryLine}>
+        <Text style={styles.summaryValue}>{total}</Text> days completed
+      </Text>
+      <Text style={styles.summaryLine}>
+        <Text style={styles.summaryValue}>{percent}%</Text> of days since you started
+      </Text>
     </View>
   );
 }
@@ -274,21 +269,16 @@ const styles = StyleSheet.create((theme, rt) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stats: {
-    flexDirection: 'row',
-    gap: theme.space.xxxl,
+  summary: {
+    gap: theme.space.xs,
   },
-  stat: {
-    gap: 2,
+  summaryLine: {
+    fontSize: theme.font.body,
+    color: theme.colors.textSecondary,
   },
-  statValue: {
-    fontSize: theme.font.display,
+  summaryValue: {
     fontWeight: theme.weight.bold,
     color: theme.colors.textPrimary,
-  },
-  statLabel: {
-    fontSize: theme.font.caption,
-    color: theme.colors.textSecondary,
   },
   section: {
     gap: theme.space.xl,
@@ -304,10 +294,6 @@ const styles = StyleSheet.create((theme, rt) => ({
   accGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  accFooter: {
-    fontSize: theme.font.body,
-    color: theme.colors.textSecondary,
   },
   hint: {
     fontSize: theme.font.caption,
