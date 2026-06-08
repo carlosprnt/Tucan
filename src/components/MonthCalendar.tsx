@@ -84,13 +84,10 @@ export function MonthCalendar({
             const inactive = !isActiveDay(activeDays, cell.key);
             const isDone = completed.has(cell.key);
             const tappable = !isFuture && !beforeStart && !inactive;
-            const state: DotState = beforeStart || inactive
-              ? 'empty'
-              : isFuture
-                ? 'future'
-                : isDone
-                  ? 'done'
-                  : 'missed';
+            // Every real day shows something: a done/missed diamond when it's a
+            // trackable past day, otherwise a faint placeholder dot (future,
+            // before the habit started, or an inactive weekday).
+            const state: DotState = isDone ? 'done' : tappable ? 'missed' : 'future';
 
             return (
               <DayCell
