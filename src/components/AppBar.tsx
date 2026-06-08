@@ -3,13 +3,29 @@ import { usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { TodayToggle } from '@/components/TodayToggle';
 import { todayKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import { completedDates, detailUI$, getHabit, homeUI$, toggleCompletion } from '@/store';
+
+/*
+ * Reanimated shared-value writes (`sv.value = ...`) are the library's official
+ * API but trip the React Compiler's react-hooks/immutability rule. These writes
+ * only happen in press handlers, never during render, so disabling is safe.
+ */
+/* eslint-disable react-hooks/immutability */
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const BAR_LAYOUT = LinearTransition.duration(240);
 // Fixed region height so the bar morphs from its center (vertically centered).
@@ -167,15 +183,23 @@ function RoundButton({
   selected?: boolean;
   children: ReactNode;
 }) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
+      onPressIn={() => {
+        scale.value = withTiming(1.3, { duration: 120 });
+      }}
+      onPressOut={() => {
+        scale.value = withTiming(1, { duration: 120 });
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected }}
-      style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}>
+      style={[styles.roundButton, animatedStyle]}>
       {children}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -212,14 +236,22 @@ function Fab({
   color: string;
   tint: string;
 }) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel="Create habit"
-      style={({ pressed }) => [styles.fab, { backgroundColor: color }, pressed && styles.pressed]}
+      onPressIn={() => {
+        scale.value = withTiming(1.3, { duration: 120 });
+      }}
+      onPressOut={() => {
+        scale.value = withTiming(1, { duration: 120 });
+      }}
+      style={[styles.fab, { backgroundColor: color }, animatedStyle]}
       onPress={onPress}>
       <SymbolView name="plus" size={26} weight="bold" tintColor={tint} />
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
