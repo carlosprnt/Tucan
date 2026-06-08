@@ -74,11 +74,7 @@ const HabitDetail = observer(function HabitDetail() {
           removeClippedSubviews
           ListHeaderComponent={
             <View style={styles.listHeader}>
-              <Header
-                title={habit.name}
-                onBack={() => router.back()}
-                onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
-              />
+              <Header title={habit.name} onBack={() => router.back()} />
               <Summary total={stats.total} percent={stats.percent} />
               <Text style={styles.hint}>Tap any past day to fill it in.</Text>
             </View>
@@ -105,11 +101,7 @@ const HabitDetail = observer(function HabitDetail() {
           style={styles.container}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-          <Header
-            title={habit.name}
-            onBack={() => router.back()}
-            onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
-          />
+          <Header title={habit.name} onBack={() => router.back()} />
           <Summary total={stats.total} percent={stats.percent} />
           <Accumulation
             completed={completed}

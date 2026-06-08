@@ -61,6 +61,18 @@ export const AppBar = observer(function AppBar() {
 
     return (
       <>
+        <Pressable
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Edit habit"
+          onPress={() => {
+            haptics.selection();
+            if (habitId) router.push({ pathname: '/habit/new', params: { id: habitId } });
+          }}
+          style={({ pressed }) => [styles.iconItem, pressed && styles.pressed]}>
+          <SymbolView name="square.and.pencil" size={22} tintColor={theme.colors.textPrimary} />
+        </Pressable>
+
         <TodayToggle
           done={done}
           color={habit?.color}
@@ -267,6 +279,12 @@ const styles = StyleSheet.create((theme) => ({
   layer: {
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconItem: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
