@@ -60,17 +60,22 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const stepTransitionAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+    // On iOS, `will` events fire before the keyboard animates, so the FAB
+    // rides up in sync with it (no lag). Match the system animation duration.
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
       Animated.timing(animatedKeyboardHeight, {
         toValue: e.endCoordinates.height,
-        duration: 250,
+        duration: e.duration || 250,
         useNativeDriver: false,
       }).start();
     });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+    const hideSub = Keyboard.addListener(hideEvent, (e) => {
       Animated.timing(animatedKeyboardHeight, {
         toValue: 0,
-        duration: 250,
+        duration: e.duration || 250,
         useNativeDriver: false,
       }).start();
     });
