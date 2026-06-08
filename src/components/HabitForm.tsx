@@ -3,7 +3,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -54,6 +54,21 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [iconsExpanded, setIconsExpanded] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Two-step create: step 1 is just the name; edit shows everything at once.
   const onStep1 = !isEdit && step === 1;
@@ -357,7 +372,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       </KeyboardAvoidingView>
 
       {onStep1 && (
-        <View style={styles.fabBar}>
+        <View style={[styles.fabBar, { bottom: Math.max(keyboardHeight, 0) + 20 }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Next"
@@ -438,7 +453,6 @@ const styles = StyleSheet.create((theme, rt) => ({
   fabBar: {
     position: 'absolute',
     right: 20,
-    bottom: rt.insets.bottom + 20,
     zIndex: 10,
   },
   nextFab: {
