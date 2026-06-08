@@ -1,9 +1,7 @@
 import '@/theme/unistyles';
 
-import { observer } from '@legendapp/state/react';
+import { observer, use$ } from '@legendapp/state/react';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import DraggableFlatList, {
   ScaleDecorator,
@@ -17,6 +15,7 @@ import { OverviewCard } from '@/components/OverviewCard';
 import { TopFade } from '@/components/TopFade';
 import { haptics } from '@/lib/haptics';
 import {
+  homeUI$,
   isStoreHydrated,
   listHabits,
   reorderHabits,
@@ -32,7 +31,7 @@ const Home = observer(function Home() {
   const { rt } = useUnistyles();
   const habits = listHabits();
   const hydrated = isStoreHydrated();
-  const [overview, setOverview] = useState(false);
+  const overview = use$(homeUI$.overview);
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Habit>) => (
     <ScaleDecorator activeScale={1.03}>
@@ -62,9 +61,7 @@ const Home = observer(function Home() {
         containerStyle={styles.screen}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <Header overview={overview} onToggle={() => setOverview((o) => !o)} habits={habits} />
-        }
+        ListHeaderComponent={<Header overview={overview} habits={habits} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={hydrated ? <EmptyState /> : <SkeletonList />}
       />
@@ -76,45 +73,19 @@ const Home = observer(function Home() {
 
 export default Home;
 
-function Header({
-  overview,
-  onToggle,
-  habits,
-}: {
-  overview: boolean;
-  onToggle: () => void;
-  habits: Habit[];
-}) {
-  const { theme } = useUnistyles();
+function Header({ overview, habits }: { overview: boolean; habits: Habit[] }) {
   return (
     <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>Your habits</Text>
-          {overview && (
-            <Animated.Text
-              entering={FadeInDown.duration(220)}
-              exiting={FadeOutUp.duration(140)}
-              style={styles.subtitle}>
-              Overview
-            </Animated.Text>
-          )}
-        </View>
-        <Pressable
-          hitSlop={12}
-          onPress={() => {
-            haptics.selection();
-            onToggle();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={overview ? 'Show list' : 'Show overview'}
-          accessibilityState={{ selected: overview }}>
-          <SymbolView
-            name={overview ? 'square.grid.2x2.fill' : 'chart.bar.fill'}
-            size={24}
-            tintColor={overview ? theme.colors.ink : theme.colors.textSecondary}
-          />
-        </Pressable>
+      <View style={styles.titleBlock}>
+        <Text style={styles.title}>Your habits</Text>
+        {overview && (
+          <Animated.Text
+            entering={FadeInDown.duration(220)}
+            exiting={FadeOutUp.duration(140)}
+            style={styles.subtitle}>
+            Overview
+          </Animated.Text>
+        )}
       </View>
 
       {overview && habits.length > 0 && (
@@ -198,11 +169,6 @@ const styles = StyleSheet.create((theme, rt) => ({
   header: {
     marginBottom: theme.space.md,
     gap: theme.space.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
   },
   titleBlock: {
     flexShrink: 1,

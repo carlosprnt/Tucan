@@ -14,3 +14,11 @@ export const detailUI$ = observable<{
   habitId: null,
   mode: 'month',
 });
+
+/**
+ * Home screen view state, shared with the global app bar so its right-hand
+ * button can toggle between the list and the overview.
+ */
+export const homeUI$ = observable<{ overview: boolean }>({
+  overview: false,
+});
