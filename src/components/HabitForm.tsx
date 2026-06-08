@@ -401,109 +401,50 @@ export function HabitForm({ habitId }: { habitId?: string }) {
               ],
             },
           ]}>
-          {/* Button 1: Next (Step 1) */}
-          {onStep1 && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={onStep1 ? 'Next' : 'Save'}
+            disabled={!canSave}
+            onPress={onStep1 ? goNext : onSave}
+            style={({ pressed }) => [
+              styles.nextFab,
+              !canSave && styles.nextFabDisabled,
+              pressed && styles.pressed,
+            ]}>
+            {/* Arrow icon - fades out */}
             <Animated.View
               style={{
+                position: 'absolute',
                 opacity: stepTransitionAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: [1, 0],
                 }),
-                transform: [
-                  {
-                    scale: stepTransitionAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 0.3],
-                    }),
-                  },
-                ],
               }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Next"
-                disabled={!canSave}
-                onPress={goNext}
-                style={({ pressed }) => [
-                  styles.nextFab,
-                  !canSave && styles.nextFabDisabled,
-                  pressed && styles.pressed,
-                ]}>
-                <SymbolView
-                  name="arrow.right"
-                  size={26}
-                  weight="bold"
-                  tintColor={theme.colors.canvas}
-                />
-              </Pressable>
+              <SymbolView
+                name="arrow.right"
+                size={26}
+                weight="bold"
+                tintColor={theme.colors.canvas}
+              />
             </Animated.View>
-          )}
 
-          {/* Button 2: Check (Step 2) - animates from center to bottom-right */}
-          {!isEdit && (
+            {/* Checkmark icon - fades in */}
             <Animated.View
               style={{
                 position: 'absolute',
-                right: stepTransitionAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 20],
-                }),
-                bottom: stepTransitionAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 20],
-                }),
                 opacity: stepTransitionAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: [0, 1],
                 }),
-                transform: [
-                  {
-                    scale: stepTransitionAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.3, 1],
-                    }),
-                  },
-                ],
               }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Save"
-                disabled={!canSave}
-                onPress={onSave}
-                style={({ pressed }) => [
-                  styles.nextFab,
-                  !canSave && styles.nextFabDisabled,
-                  pressed && styles.pressed,
-                ]}>
-                <SymbolView
-                  name="checkmark"
-                  size={26}
-                  weight="bold"
-                  tintColor={theme.colors.canvas}
-                />
-              </Pressable>
-            </Animated.View>
-          )}
-
-          {/* Edit mode: Save button */}
-          {isEdit && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Save"
-              disabled={!canSave}
-              onPress={onSave}
-              style={({ pressed }) => [
-                styles.nextFab,
-                !canSave && styles.nextFabDisabled,
-                pressed && styles.pressed,
-              ]}>
               <SymbolView
                 name="checkmark"
                 size={26}
                 weight="bold"
                 tintColor={theme.colors.canvas}
               />
-            </Pressable>
-          )}
+            </Animated.View>
+          </Pressable>
         </Animated.View>
       )}
 
