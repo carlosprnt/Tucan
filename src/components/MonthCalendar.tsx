@@ -19,7 +19,7 @@ import { SparkleBurst, type SparkleBurstHandle } from './SparkleBurst';
 
 /* eslint-disable react-hooks/immutability */
 
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const GAP = 8;
 
 interface MonthCalendarProps {
@@ -52,9 +52,10 @@ export function MonthCalendar({
   const overlayStyle = useAnimatedStyle(() => ({ left: px.value, top: py.value }));
 
   const cellSize = width > 0 ? (width - GAP * 6) / 7 : 0;
-  const glyphSize = cellSize * 0.76;
+  const glyphSize = cellSize * 0.62;
 
-  const firstDow = new Date(year, month, 1).getDay();
+  // Monday-first: shift JS getDay() (0=Sun) so Monday = 0.
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const cells: ({ day: number; key: DateKey } | null)[] = [];

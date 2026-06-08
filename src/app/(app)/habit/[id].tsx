@@ -124,8 +124,8 @@ const HabitDetail = observer(function HabitDetail() {
 
 export default HabitDetail;
 
-const CELL = 12;
-const GAP = 6;
+const CELL = 9;
+const GAP = 5;
 
 function Accumulation({
   completed,
@@ -181,7 +181,7 @@ function Header({
       </Text>
       {onEdit ? (
         <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
-          <SymbolView name="pencil" size={20} tintColor={theme.colors.textPrimary} />
+          <SymbolView name="square.and.pencil" size={22} weight="semibold" tintColor={theme.colors.textPrimary} />
         </Pressable>
       ) : (
         <View style={styles.iconBtn} />
