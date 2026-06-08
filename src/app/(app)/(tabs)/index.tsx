@@ -89,7 +89,17 @@ function Header({
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Your habits</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>Your habits</Text>
+          {overview && (
+            <Animated.Text
+              entering={FadeInDown.duration(220)}
+              exiting={FadeOutUp.duration(140)}
+              style={styles.subtitle}>
+              Overview
+            </Animated.Text>
+          )}
+        </View>
         <Pressable
           hitSlop={12}
           onPress={() => {
@@ -191,14 +201,23 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+  },
+  titleBlock: {
+    flexShrink: 1,
   },
   title: {
     fontSize: theme.font.title,
     fontWeight: theme.weight.bold,
     letterSpacing: -0.5,
     color: theme.colors.textPrimary,
+  },
+  subtitle: {
+    marginTop: 2,
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.medium,
+    color: theme.colors.textSecondary,
   },
   summary: {
     flexDirection: 'row',
