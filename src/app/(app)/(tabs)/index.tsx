@@ -200,7 +200,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.space.sm,
   },
@@ -210,7 +210,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   todayProgress: {
     fontSize: theme.font.caption,
     fontWeight: theme.weight.medium,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textPrimary,
     borderWidth: 1,
     borderColor: theme.colors.separator,
     borderRadius: theme.radius.pill,
