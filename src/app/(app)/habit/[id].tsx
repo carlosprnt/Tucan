@@ -172,7 +172,7 @@ function MonthScroll({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       {header}
-      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <View style={styles.monthsWrap} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {months.map((m, i) =>
           i < revealed ? (
             <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
@@ -370,10 +370,11 @@ function Summary({ total, days, percent }: { total: number; days: number; percen
 }
 
 function monthName(year: number, month: number): string {
-  return fromDateKey(`${year}-${String(month + 1).padStart(2, '0')}-01`).toLocaleDateString(
+  const name = fromDateKey(`${year}-${String(month + 1).padStart(2, '0')}-01`).toLocaleDateString(
     undefined,
     { month: 'long' },
   );
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 /** Months from today's month back to the start month, newest first. */
@@ -412,6 +413,9 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   listHeader: {
     gap: theme.space.xl,
+  },
+  monthsWrap: {
+    gap: theme.space.xxl, // ≥32px between months
   },
   headerRow: {
     flexDirection: 'row',
