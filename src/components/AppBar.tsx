@@ -1,7 +1,7 @@
 import { observer } from '@legendapp/state/react';
 import { usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -60,6 +60,12 @@ export const AppBar = observer(function AppBar() {
   const isCreate = pathname === '/habit/new';
   const isDetail = pathname.startsWith('/habit/') && !isCreate;
 
+  // Measured to keep the centered check pill ≥8px clear of the right-aligned
+  // view pill (otherwise the wide view label can overlap it on narrow screens).
+  const [barW, setBarW] = useState(0);
+  const [checkW, setCheckW] = useState(0);
+  const [viewW, setViewW] = useState(0);
+
   if (isDetail) {
     const habitId = detailUI$.habitId.get();
     const mode = detailUI$.mode.get();
@@ -67,14 +73,30 @@ export const AppBar = observer(function AppBar() {
     const habit = habitId ? getHabit(habitId) : undefined;
     const done = habitId ? completedDates(habitId).has(today) : false;
 
+    // Center the check, but never let it come within 8px of the view pill.
+    const rightInset = theme.space.lg;
+    const measured = barW > 0 && checkW > 0 && viewW > 0;
+    const centeredLeft = (barW - checkW) / 2;
+    const viewLeft = barW - rightInset - viewW;
+    const checkLeft = measured
+      ? Math.max(theme.space.sm, Math.min(centeredLeft, viewLeft - theme.space.sm - checkW))
+      : 0;
+
     return (
       <View
         pointerEvents="box-none"
         style={[styles.wrap, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
-        <View style={styles.detailBar} pointerEvents="box-none">
-          {/* Mark-today pill — centered on screen */}
-          <View style={styles.detailCheckCenter} pointerEvents="box-none">
-            <View style={styles.detailPill}>
+        <View
+          style={styles.detailBar}
+          pointerEvents="box-none"
+          onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
+          {/* Mark-today pill — centered on screen, clamped clear of the view pill */}
+          <View
+            pointerEvents="box-none"
+            style={measured ? [styles.detailCheckClamped, { left: checkLeft }] : styles.detailCheckCenter}>
+            <View
+              style={styles.detailPill}
+              onLayout={(e) => setCheckW(e.nativeEvent.layout.width)}>
               <TodayToggle
                 done={done}
                 color={habit?.color}
@@ -89,6 +111,7 @@ export const AppBar = observer(function AppBar() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={mode === 'month' ? 'View total' : 'View calendar'}
+            onLayout={(e) => setViewW(e.nativeEvent.layout.width)}
             onPress={() => {
               haptics.selection();
               detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month');
@@ -256,6 +279,12 @@ const styles = StyleSheet.create((theme) => ({
   detailCheckCenter: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailCheckClamped: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
     justifyContent: 'center',
   },
   detailViewRight: {
