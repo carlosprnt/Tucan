@@ -3,7 +3,7 @@ import '@/theme/unistyles';
 import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { DotsThreeVertical } from 'phosphor-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -210,8 +210,9 @@ const ACC_GRAY_MS = 500;
 const ACC_DONE_MS = 500;
 const ACC_FADE_MS = 180;
 
-// Total-view zoom (spin + grow) cascade duration.
+// Total-view zoom (spin + grow) cascade duration and size steps.
 const ZOOM_MS = 1000;
+const ZOOM_SCALES = [1, 1.3, 1.5]; // original → +30% → +20% more
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first
 const WEEKDAY_COUNT = 7;
@@ -332,16 +333,21 @@ function Accumulation({
   const doneEnter = (i: number) =>
     animate ? FadeIn.delay(ACC_GRAY_MS + (i / n) * ACC_DONE_MS).duration(ACC_FADE_MS) : undefined;
 
-  // Tapping any glyph other than today's toggles a zoom: every glyph spins 90°
-  // and grows 30%, cascading left→right / top→bottom over 1s.
-  const [zoomed, setZoomed] = useState(false);
+  // Tapping any glyph other than today's steps the zoom: original → +30% →
+  // +20% more → original. Each step spins 90° and scales, cascading over 1s.
+  const levelRef = useRef(0);
   const seq = useSharedValue(0);
-  useEffect(() => {
-    seq.value = withTiming(zoomed ? 1 : 0, { duration: ZOOM_MS, easing: Easing.linear });
-  }, [zoomed, seq]);
+  const fromScale = useSharedValue(1);
+  const toScale = useSharedValue(1);
   const toggleZoom = () => {
     haptics.selection();
-    setZoomed((z) => !z);
+    const lv = levelRef.current;
+    const next = (lv + 1) % ZOOM_SCALES.length;
+    levelRef.current = next;
+    fromScale.value = ZOOM_SCALES[lv];
+    toScale.value = ZOOM_SCALES[next];
+    seq.value = 0;
+    seq.value = withTiming(1, { duration: ZOOM_MS, easing: Easing.linear });
   };
 
   // Center the grid as a block (exact column count), but left-align the cells
@@ -363,6 +369,8 @@ function Accumulation({
                 i={i}
                 n={n}
                 seq={seq}
+                fromScale={fromScale}
+                toScale={toScale}
                 entering={grayEnter(i)}
                 onPress={isToday ? undefined : toggleZoom}>
                 <Glyph size={CELL} state={isToday ? 'today' : 'missed'} color={accent} />
@@ -374,7 +382,14 @@ function Accumulation({
         <View style={[styles.accGrid, styles.accOverlay, { gap: GAP }]} pointerEvents="none">
           {days.map((key, i) =>
             completed.has(key) ? (
-              <ZoomCell key={key} i={i} n={n} seq={seq} entering={doneEnter(i)}>
+              <ZoomCell
+                key={key}
+                i={i}
+                n={n}
+                seq={seq}
+                fromScale={fromScale}
+                toScale={toScale}
+                entering={doneEnter(i)}>
                 <Glyph size={CELL} state="done" color={accent} />
               </ZoomCell>
             ) : (
@@ -387,12 +402,14 @@ function Accumulation({
   );
 }
 
-/** A grid cell whose glyph spins 90° + grows 30% as `seq` sweeps, staggered by
- *  index so the effect cascades across the grid. */
+/** A grid cell whose glyph spins 90° and scales from `fromScale` to `toScale`
+ *  as `seq` sweeps, staggered by index so the effect cascades across the grid. */
 function ZoomCell({
   i,
   n,
   seq,
+  fromScale,
+  toScale,
   entering,
   onPress,
   children,
@@ -400,6 +417,8 @@ function ZoomCell({
   i: number;
   n: number;
   seq: SharedValue<number>;
+  fromScale: SharedValue<number>;
+  toScale: SharedValue<number>;
   entering?: ReturnType<typeof FadeIn.delay>;
   onPress?: () => void;
   children: React.ReactNode;
@@ -408,7 +427,8 @@ function ZoomCell({
     const window = 0.5; // each glyph's transition spans half of the sweep
     const start = (i / n) * (1 - window);
     const p = Math.min(1, Math.max(0, (seq.value - start) / window));
-    return { transform: [{ scale: 1 + 0.3 * p }, { rotate: `${90 * p}deg` }] };
+    const scale = fromScale.value + (toScale.value - fromScale.value) * p;
+    return { transform: [{ scale }, { rotate: `${90 * p}deg` }] };
   });
   return (
     <Animated.View entering={entering} style={styles.zoomCell}>
