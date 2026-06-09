@@ -133,7 +133,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.space.xs,
   },
   total: {
-    fontSize: theme.font.title,
+    fontSize: theme.font.heading, // same size as the habit title
     fontWeight: theme.weight.heavy,
     letterSpacing: -0.5,
     color: theme.colors.textPrimary,
