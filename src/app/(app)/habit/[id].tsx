@@ -19,7 +19,6 @@ import Animated, {
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { DetailActionBar } from '@/components/DetailActionBar';
-import { DragSheet } from '@/components/DragSheet';
 import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { haptics } from '@/lib/haptics';
@@ -77,7 +76,7 @@ const HabitDetail = observer(function HabitDetail() {
   const months = monthsDescending(habit.start_date, today);
 
   return (
-    <DragSheet onClose={() => router.back()}>
+    <View style={styles.screen}>
       {mode === 'month' ? (
         <MonthScroll
           months={months}
@@ -123,7 +122,7 @@ const HabitDetail = observer(function HabitDetail() {
         onToggleMode={() => detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month')}
         onClose={() => router.back()}
       />
-    </DragSheet>
+    </View>
   );
 });
 
@@ -511,7 +510,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     paddingHorizontal: theme.space.xl, // 24px side margins
-    paddingTop: theme.space.sm, // grabber zone already provides top spacing
+    paddingTop: theme.space.xl, // 24px from the top of the modal
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
   },
