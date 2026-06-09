@@ -208,9 +208,15 @@ const styles = StyleSheet.create((theme, rt) => ({
     flexShrink: 1,
   },
   todayProgress: {
-    fontSize: theme.font.body,
+    fontSize: theme.font.caption,
     fontWeight: theme.weight.medium,
     color: theme.colors.textSecondary,
+    borderWidth: 1,
+    borderColor: theme.colors.separator,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: theme.space.md,
+    paddingVertical: theme.space.xs,
+    overflow: 'hidden',
   },
   title: {
     fontSize: theme.font.title,
