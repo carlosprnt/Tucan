@@ -19,6 +19,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { DetailActionBar } from '@/components/DetailActionBar';
 import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
+import { haptics } from '@/lib/haptics';
 import { addDays, daysBetween, fromDateKey, isActiveDay, todayKey, type DateKey } from '@/lib/date';
 import {
   completedDates,
@@ -326,26 +327,39 @@ function Accumulation({
   const doneEnter = (i: number) =>
     animate ? FadeIn.delay(ACC_GRAY_MS + (i / n) * ACC_DONE_MS).duration(ACC_FADE_MS) : undefined;
 
+  // Tapping any glyph other than today's cycles the grid size 1× → 2× → 4× → 1×.
+  const [zoom, setZoom] = useState(1);
+  const cell = CELL * zoom;
+  const cycleZoom = () => {
+    haptics.selection();
+    setZoom((z) => (z >= 4 ? 1 : z * 2));
+  };
+
   return (
     <View style={styles.section}>
       <View style={styles.accStack}>
         {/* Base layer: gray (and today's outline) */}
         <View style={[styles.accGrid, { gap: GAP }]}>
-          {days.map((key, i) => (
-            <Animated.View key={key} entering={grayEnter(i)} style={{ width: CELL, height: CELL }}>
-              <Glyph size={CELL} state={key === today ? 'today' : 'missed'} color={accent} />
-            </Animated.View>
-          ))}
+          {days.map((key, i) => {
+            const isToday = key === today;
+            return (
+              <Animated.View key={key} entering={grayEnter(i)} style={{ width: cell, height: cell }}>
+                <Pressable disabled={isToday} onPress={cycleZoom} style={styles.cellPress}>
+                  <Glyph size={cell} state={isToday ? 'today' : 'missed'} color={accent} />
+                </Pressable>
+              </Animated.View>
+            );
+          })}
         </View>
         {/* Done overlay: completed days fill in over the gray base */}
         <View style={[styles.accGrid, styles.accOverlay, { gap: GAP }]} pointerEvents="none">
           {days.map((key, i) =>
             completed.has(key) ? (
-              <Animated.View key={key} entering={doneEnter(i)} style={{ width: CELL, height: CELL }}>
-                <Glyph size={CELL} state="done" color={accent} />
+              <Animated.View key={key} entering={doneEnter(i)} style={{ width: cell, height: cell }}>
+                <Glyph size={cell} state="done" color={accent} />
               </Animated.View>
             ) : (
-              <View key={key} style={{ width: CELL, height: CELL }} />
+              <View key={key} style={{ width: cell, height: cell }} />
             ),
           )}
         </View>
@@ -505,6 +519,11 @@ const styles = StyleSheet.create((theme, rt) => ({
   accGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  cellPress: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   accOverlay: {
     ...StyleSheet.absoluteFillObject,
