@@ -247,7 +247,8 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.space.sm,
+    height: 54, // fixed so both pills are exactly the same height
+    paddingHorizontal: theme.space.sm,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.card,
     borderWidth: 1,
@@ -260,7 +261,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   viewToggle: {
     gap: theme.space.xs,
-    height: 38, // match the check pill (TodayToggle is 38)
     paddingRight: theme.space.sm,
   },
   viewToggleLabel: {

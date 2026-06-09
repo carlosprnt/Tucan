@@ -1,8 +1,56 @@
+import { useEffect } from 'react';
+import Animated, {
+  useAnimatedProps,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useUnistyles } from 'react-native-unistyles';
 
 import { diamondPath } from '@/lib/glyph';
 import type { DotState } from '@/lib/grid';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+/** Today's unmarked outline diamond inside the grid, pulsing slowly. */
+function TodayCell({
+  d,
+  x,
+  y,
+  stroke,
+  strokeWidth,
+}: {
+  d: string;
+  x: number;
+  y: number;
+  stroke: string;
+  strokeWidth: number;
+}) {
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: 1200 }),
+        withTiming(1, { duration: 1200 }),
+      ),
+      -1,
+      false,
+    );
+  }, [opacity]);
+  const animatedProps = useAnimatedProps(() => ({ opacity: opacity.value }));
+  return (
+    <AnimatedPath
+      d={d}
+      transform={`translate(${x}, ${y})`}
+      fill="none"
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+      animatedProps={animatedProps}
+    />
+  );
+}
 
 interface DotGridProps {
   states: DotState[];
@@ -44,14 +92,14 @@ export function DotGrid({ states, columns, cellSize = 12, gap = 6, color }: DotG
             />
           );
         }
-        // Today, still unmarked: outline only (stroke, no fill).
+        // Today, still unmarked: pulsing outline only (stroke, no fill).
         if (state === 'today') {
           return (
-            <Path
+            <TodayCell
               key={i}
               d={path}
-              transform={`translate(${x}, ${y})`}
-              fill="none"
+              x={x}
+              y={y}
               stroke={color ?? theme.colors.ink}
               strokeWidth={Math.max(1.5, cellSize * 0.1)}
             />

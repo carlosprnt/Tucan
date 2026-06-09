@@ -1,4 +1,12 @@
+import { useEffect } from 'react';
 import { View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useUnistyles } from 'react-native-unistyles';
 
@@ -31,15 +39,9 @@ export function Glyph({ size, state, color }: GlyphProps) {
     );
   }
 
-  // Today, still unmarked: outline only (stroke, no fill).
+  // Today, still unmarked: outline only (stroke, no fill), gently pulsing.
   if (state === 'today') {
-    const stroke = color ?? theme.colors.ink;
-    const sw = Math.max(1.5, size * 0.1);
-    return (
-      <Svg width={size} height={size}>
-        <Path d={diamondPath(size)} fill="none" stroke={stroke} strokeWidth={sw} />
-      </Svg>
-    );
+    return <TodayGlyph size={size} color={color ?? theme.colors.ink} />;
   }
 
   const fill = state === 'done' ? (color ?? theme.colors.dotDone) : theme.colors.dotMissed;
@@ -48,5 +50,30 @@ export function Glyph({ size, state, color }: GlyphProps) {
     <Svg width={size} height={size}>
       <Path d={diamondPath(size)} fill={fill} />
     </Svg>
+  );
+}
+
+/** Today's unmarked outline diamond, with a slow, subtle opacity pulse. */
+function TodayGlyph({ size, color }: { size: number; color: string }) {
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: 1200 }),
+        withTiming(1, { duration: 1200 }),
+      ),
+      -1,
+      false,
+    );
+  }, [opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const sw = Math.max(1.5, size * 0.1);
+
+  return (
+    <Animated.View style={style}>
+      <Svg width={size} height={size}>
+        <Path d={diamondPath(size)} fill="none" stroke={color} strokeWidth={sw} />
+      </Svg>
+    </Animated.View>
   );
 }
