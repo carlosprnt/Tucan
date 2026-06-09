@@ -1,7 +1,7 @@
 import { observer } from '@legendapp/state/react';
 import { usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import Animated, {
   Easing,
@@ -37,12 +37,13 @@ export const AppBar = observer(function AppBar() {
   const isHome = pathname === '/';
 
   // Entrance: rise from below + fade in, fast then decelerating (ease-out).
-  // Replays every time the home screen becomes active (not just first mount,
-  // which can happen behind the splash and be missed).
+  // Plays once, the first time home appears. It must NOT replay when a modal
+  // (detail/settings/create) closes — the bar was there behind it all along.
   const enter = useSharedValue(0);
+  const entered = useRef(false);
   useEffect(() => {
-    if (!isHome) return;
-    enter.value = 0;
+    if (!isHome || entered.current) return;
+    entered.current = true;
     enter.value = withDelay(
       120,
       withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),

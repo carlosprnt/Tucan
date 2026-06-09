@@ -176,7 +176,10 @@ function MonthScroll({
         {months.map((m, i) =>
           i < revealed ? (
             <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
-              <Text style={styles.monthLabel}>{monthLabel(m.year, m.month)}</Text>
+              <Text style={styles.monthLabel}>
+                <Text style={styles.monthName}>{monthName(m.year, m.month)}</Text>{' '}
+                <Text style={styles.monthYear}>{m.year}</Text>
+              </Text>
               <MonthCalendar
                 year={m.year}
                 month={m.month}
@@ -366,10 +369,10 @@ function Summary({ total, days, percent }: { total: number; days: number; percen
   );
 }
 
-function monthLabel(year: number, month: number): string {
+function monthName(year: number, month: number): string {
   return fromDateKey(`${year}-${String(month + 1).padStart(2, '0')}-01`).toLocaleDateString(
     undefined,
-    { month: 'long', year: 'numeric' },
+    { month: 'long' },
   );
 }
 
@@ -463,9 +466,16 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textMuted,
   },
   monthLabel: {
-    fontSize: theme.font.heading,
-    fontWeight: theme.weight.semibold,
+    fontSize: theme.font.body,
+  },
+  monthName: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.bold,
     color: theme.colors.textPrimary,
+  },
+  monthYear: {
+    fontSize: theme.font.body,
+    color: theme.colors.textSecondary,
   },
   accGrid: {
     flexDirection: 'row',
