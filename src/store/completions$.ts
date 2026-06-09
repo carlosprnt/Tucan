@@ -92,6 +92,8 @@ export function completedDates(habitId: string): Set<DateKey> {
 
 export interface HabitStats {
   total: number;
+  /** Active days elapsed from start through today (the % denominator). */
+  days: number;
   /** done / (today − start_date + 1), 0–100, rounded. */
   percent: number;
 }
@@ -112,9 +114,7 @@ export function statsForHabit(
   activeDays: number = ALL_DAYS,
 ): HabitStats {
   const total = totalForHabit(habitId);
-  const percent = Math.min(
-    100,
-    Math.round((total / activeDaysElapsed(startDate, activeDays)) * 100),
-  );
-  return { total, percent };
+  const days = activeDaysElapsed(startDate, activeDays);
+  const percent = Math.min(100, Math.round((total / days) * 100));
+  return { total, days, percent };
 }

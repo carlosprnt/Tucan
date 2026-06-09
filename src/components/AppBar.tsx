@@ -1,8 +1,8 @@
 import { observer } from '@legendapp/state/react';
 import { usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, type ReactNode } from 'react';
+import { Pressable } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -12,10 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
-import { TodayToggle } from '@/components/TodayToggle';
-import { todayKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
-import { completedDates, detailUI$, getHabit, homeUI$, toggleCompletion } from '@/store';
+import { homeUI$ } from '@/store';
 
 /*
  * Reanimated shared-value writes (`sv.value = ...`) are the library's official
@@ -27,9 +25,9 @@ import { completedDates, detailUI$, getHabit, homeUI$, toggleCompletion } from '
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
- * Single persistent floating bar. It stays mounted across navigation and shows
- * context-specific actions — main tabs (Settings · + · view) or, inside a
- * habit, two pills (mark today · view selector).
+ * The persistent home navigation bar: Settings · + · view-change. It stays
+ * mounted behind modals (create, settings, habit detail) so the bottom nav is
+ * present as they're dismissed.
  */
 export const AppBar = observer(function AppBar() {
   const pathname = usePathname();
@@ -55,88 +53,7 @@ export const AppBar = observer(function AppBar() {
     transform: [{ translateY: (1 - enter.value) * 40 }],
   }));
 
-  // Over the create/edit sheet, keep the main bar mounted behind it so the
-  // bottom nav stays visible as the sheet is swiped away (no flash/disappear).
-  const isCreate = pathname === '/habit/new';
-  const isDetail = pathname.startsWith('/habit/') && !isCreate;
-
-  // Measured to keep the centered check pill ≥8px clear of the right-aligned
-  // view pill (otherwise the wide view label can overlap it on narrow screens).
-  const [barW, setBarW] = useState(0);
-  const [checkW, setCheckW] = useState(0);
-  const [viewW, setViewW] = useState(0);
-
-  if (isDetail) {
-    const habitId = detailUI$.habitId.get();
-    const mode = detailUI$.mode.get();
-    const today = todayKey();
-    const habit = habitId ? getHabit(habitId) : undefined;
-    const done = habitId ? completedDates(habitId).has(today) : false;
-
-    // Center the check, but never let it come within 8px of the view pill.
-    const rightInset = theme.space.lg;
-    const measured = barW > 0 && checkW > 0 && viewW > 0;
-    const centeredLeft = (barW - checkW) / 2;
-    const viewLeft = barW - rightInset - viewW;
-    const checkLeft = measured
-      ? Math.max(theme.space.sm, Math.min(centeredLeft, viewLeft - theme.space.sm - checkW))
-      : 0;
-
-    return (
-      <View
-        pointerEvents="box-none"
-        style={[styles.wrap, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
-        <View
-          style={styles.detailBar}
-          pointerEvents="box-none"
-          onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
-          {/* Mark-today pill — centered on screen, clamped clear of the view pill */}
-          <View
-            pointerEvents="box-none"
-            style={measured ? [styles.detailCheckClamped, { left: checkLeft }] : styles.detailCheckCenter}>
-            <View
-              style={styles.detailPill}
-              onLayout={(e) => setCheckW(e.nativeEvent.layout.width)}>
-              <TodayToggle
-                done={done}
-                color={habit?.color}
-                onPress={() => {
-                  if (habitId) toggleCompletion(habitId, today);
-                }}
-              />
-            </View>
-          </View>
-
-          {/* View selector pill — aligned to the right edge */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={mode === 'month' ? 'View total' : 'View calendar'}
-            onLayout={(e) => setViewW(e.nativeEvent.layout.width)}
-            onPress={() => {
-              haptics.selection();
-              detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month');
-            }}
-            style={({ pressed }) => [
-              styles.detailPill,
-              styles.viewToggle,
-              styles.detailViewRight,
-              pressed && styles.pressed,
-            ]}>
-            <SymbolView
-              name={mode === 'month' ? 'square.grid.3x3.fill' : 'calendar'}
-              size={24}
-              tintColor={theme.colors.textPrimary}
-            />
-            <Text style={styles.viewToggleLabel}>
-              {mode === 'month' ? 'View total' : 'View calendar'}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  // Main context: three buttons spread across the bottom —
+  // Three buttons spread across the bottom —
   // left Settings (opens the modal) · center Create · right view-change.
   const overview = homeUI$.overview.get();
 
@@ -270,53 +187,6 @@ const styles = StyleSheet.create((theme) => ({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
-  },
-  detailBar: {
-    width: '100%',
-    height: 54,
-    justifyContent: 'center',
-  },
-  detailCheckCenter: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailCheckClamped: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  detailViewRight: {
-    position: 'absolute',
-    right: theme.space.lg,
-    top: 0,
-    bottom: 0,
-  },
-  detailPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 54, // fixed so both pills are exactly the same height
-    paddingHorizontal: theme.space.sm,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.card,
-    borderWidth: 1,
-    borderColor: theme.colors.separator,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-  },
-  viewToggle: {
-    gap: theme.space.xs,
-    paddingHorizontal: theme.space.sm + 10, // a bit more breathing room each side
-  },
-  viewToggleLabel: {
-    fontSize: theme.font.body,
-    fontWeight: theme.weight.semibold,
-    color: theme.colors.textPrimary,
   },
   fab: {
     width: 64,

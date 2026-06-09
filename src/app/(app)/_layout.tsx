@@ -12,7 +12,7 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="habit/[id]" />
+        <Stack.Screen name="habit/[id]" options={{ presentation: 'modal' }} />
       </Stack>
       <AppBar />
     </View>

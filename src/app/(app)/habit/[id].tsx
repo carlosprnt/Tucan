@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { DetailActionBar } from '@/components/DetailActionBar';
 import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { cascadeIn } from '@/lib/anim';
@@ -88,7 +89,7 @@ const HabitDetail = observer(function HabitDetail() {
                 onBack={() => router.back()}
                 onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
               />
-              <Summary total={stats.total} percent={stats.percent} />
+              <Summary total={stats.total} days={stats.days} percent={stats.percent} />
             </View>
           }
         />
@@ -102,7 +103,7 @@ const HabitDetail = observer(function HabitDetail() {
             onBack={() => router.back()}
             onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
           />
-          <Summary total={stats.total} percent={stats.percent} />
+          <Summary total={stats.total} days={stats.days} percent={stats.percent} />
           <Accumulation
             completed={completed}
             startDate={habit.start_date}
@@ -113,6 +114,14 @@ const HabitDetail = observer(function HabitDetail() {
           />
         </ScrollView>
       )}
+
+      <DetailActionBar
+        done={completed.has(today)}
+        color={habit.color}
+        onToggleToday={() => toggleCompletion(habit.id, today)}
+        mode={mode}
+        onToggleMode={() => detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month')}
+      />
     </View>
   );
 });
@@ -355,10 +364,13 @@ function Header({
   );
 }
 
-/** Two muted sentences with the number/percent emphasized in ink. */
-function Summary({ total, percent }: { total: number; percent: number }) {
+/** Muted sentences with the numbers emphasized in ink. */
+function Summary({ total, days, percent }: { total: number; days: number; percent: number }) {
   return (
     <View style={styles.summary}>
+      <Text style={styles.summaryLine}>
+        <Text style={styles.summaryValue}>{days}</Text> days total
+      </Text>
       <Text style={styles.summaryLine}>
         <Text style={styles.summaryValue}>{total}</Text> days completed
       </Text>
