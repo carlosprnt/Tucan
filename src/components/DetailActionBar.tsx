@@ -34,7 +34,7 @@ export function DetailActionBar({
   const [viewW, setViewW] = useState(0);
   const [closeW, setCloseW] = useState(0);
 
-  const inset = theme.space.lg;
+  const inset = theme.space.xl; // 24px — match the content side margins
   const gap = theme.space.sm;
   const measured = barW > 0 && checkW > 0 && viewW > 0 && closeW > 0;
   const centeredLeft = (barW - checkW) / 2;
@@ -124,13 +124,13 @@ const styles = StyleSheet.create((theme) => ({
   },
   viewRight: {
     position: 'absolute',
-    right: theme.space.lg,
+    right: theme.space.xl, // 24px — match content margins
     top: 0,
     bottom: 0,
   },
   closeLeft: {
     position: 'absolute',
-    left: theme.space.lg,
+    left: theme.space.xl, // 24px — match content margins
     top: 0,
     bottom: 0,
   },
