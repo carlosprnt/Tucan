@@ -19,24 +19,32 @@ export function DetailActionBar({
   onToggleToday,
   mode,
   onToggleMode,
+  onClose,
 }: {
   done: boolean;
   color?: string | null;
   onToggleToday: () => void;
   mode: DetailViewMode;
   onToggleMode: () => void;
+  onClose: () => void;
 }) {
   const { theme, rt } = useUnistyles();
   const [barW, setBarW] = useState(0);
   const [checkW, setCheckW] = useState(0);
   const [viewW, setViewW] = useState(0);
+  const [closeW, setCloseW] = useState(0);
 
-  const rightInset = theme.space.lg;
-  const measured = barW > 0 && checkW > 0 && viewW > 0;
+  const inset = theme.space.lg;
+  const gap = theme.space.sm;
+  const measured = barW > 0 && checkW > 0 && viewW > 0 && closeW > 0;
   const centeredLeft = (barW - checkW) / 2;
-  const viewLeft = barW - rightInset - viewW;
+  const viewLeft = barW - inset - viewW;
+  const closeRight = inset + closeW;
   const checkLeft = measured
-    ? Math.max(theme.space.sm, Math.min(centeredLeft, viewLeft - theme.space.sm - checkW))
+    ? Math.min(
+        Math.max(centeredLeft, closeRight + gap), // clear of the left close pill
+        viewLeft - gap - checkW, // clear of the right view pill
+      )
     : 0;
 
   const isMonth = mode === 'month';
@@ -46,11 +54,24 @@ export function DetailActionBar({
       pointerEvents="box-none"
       style={[styles.wrap, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
       <View style={styles.bar} pointerEvents="box-none" onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
-        {/* Mark-today pill — centered, clamped clear of the view pill */}
+        {/* Close pill — bottom-left */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onLayout={(e) => setCloseW(e.nativeEvent.layout.width)}
+          onPress={() => {
+            haptics.selection();
+            onClose();
+          }}
+          style={({ pressed }) => [styles.pill, styles.square, styles.closeLeft, pressed && styles.pressed]}>
+          <SymbolView name="xmark" size={20} weight="semibold" tintColor={theme.colors.textPrimary} />
+        </Pressable>
+
+        {/* Mark-today pill — centered, clamped clear of both side pills */}
         <View
           pointerEvents="box-none"
           style={measured ? [styles.checkClamped, { left: checkLeft }] : styles.checkCenter}>
-          <View style={styles.pill} onLayout={(e) => setCheckW(e.nativeEvent.layout.width)}>
+          <View style={[styles.pill, styles.square]} onLayout={(e) => setCheckW(e.nativeEvent.layout.width)}>
             <TodayToggle done={done} color={color} onPress={onToggleToday} />
           </View>
         </View>
@@ -106,6 +127,15 @@ const styles = StyleSheet.create((theme) => ({
     right: theme.space.lg,
     top: 0,
     bottom: 0,
+  },
+  closeLeft: {
+    position: 'absolute',
+    left: theme.space.lg,
+    top: 0,
+    bottom: 0,
+  },
+  square: {
+    width: 54, // same square container as the check pill
   },
   pill: {
     flexDirection: 'row',

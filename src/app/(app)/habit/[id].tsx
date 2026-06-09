@@ -2,7 +2,6 @@ import '@/theme/unistyles';
 
 import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { PencilSimple } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -54,7 +53,7 @@ const HabitDetail = observer(function HabitDetail() {
   if (!habit) {
     return (
       <View style={styles.screen}>
-        <Header title="" onBack={() => router.back()} />
+        <Header title="" />
         <View style={styles.notFound}>
           <Text style={styles.missing}>This habit no longer exists.</Text>
           <Pressable
@@ -86,7 +85,6 @@ const HabitDetail = observer(function HabitDetail() {
             <View style={styles.listHeader}>
               <Header
                 title={habit.name}
-                onBack={() => router.back()}
                 onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
               />
               <Summary total={stats.total} days={stats.days} percent={stats.percent} />
@@ -100,7 +98,6 @@ const HabitDetail = observer(function HabitDetail() {
           showsVerticalScrollIndicator={false}>
           <Header
             title={habit.name}
-            onBack={() => router.back()}
             onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
           />
           <Summary total={stats.total} days={stats.days} percent={stats.percent} />
@@ -121,6 +118,7 @@ const HabitDetail = observer(function HabitDetail() {
         onToggleToday={() => toggleCompletion(habit.id, today)}
         mode={mode}
         onToggleMode={() => detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month')}
+        onClose={() => router.back()}
       />
     </View>
   );
@@ -335,30 +333,17 @@ function Accumulation({
   );
 }
 
-function Header({
-  title,
-  onBack,
-  onEdit,
-}: {
-  title: string;
-  onBack: () => void;
-  onEdit?: () => void;
-}) {
+function Header({ title, onEdit }: { title: string; onEdit?: () => void }) {
   const { theme } = useUnistyles();
   return (
     <View style={styles.headerRow}>
-      <Pressable hitSlop={12} onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.iconBtn}>
-        <SymbolView name="chevron.left" size={22} tintColor={theme.colors.textPrimary} />
-      </Pressable>
       <Text style={styles.headerTitle} numberOfLines={1}>
         {title}
       </Text>
-      {onEdit ? (
+      {onEdit && (
         <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
           <PencilSimple size={24} weight="bold" color={theme.colors.textPrimary} />
         </Pressable>
-      ) : (
-        <View style={styles.iconBtn} />
       )}
     </View>
   );
@@ -418,7 +403,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     paddingHorizontal: theme.space.lg,
-    paddingTop: rt.insets.top + theme.space.sm,
+    paddingTop: theme.space.lg, // modal sheet: sit near the top with a clean margin
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
   },
@@ -428,11 +413,11 @@ const styles = StyleSheet.create((theme, rt) => ({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     flex: 1,
     textAlign: 'left',
-    marginLeft: theme.space.xl,
     fontSize: theme.font.title,
     fontWeight: theme.weight.bold,
     letterSpacing: -0.5,
