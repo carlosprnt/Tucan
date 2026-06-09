@@ -44,15 +44,20 @@ export const AppBar = observer(function AppBar() {
   const router = useRouter();
   const { theme, rt } = useUnistyles();
 
-  // Entrance: rise from below + fade in, fast then decelerating (ease-out),
-  // shortly after the screen appears. Plays once on mount.
+  const isHome = pathname === '/';
+
+  // Entrance: rise from below + fade in, fast then decelerating (ease-out).
+  // Replays every time the home screen becomes active (not just first mount,
+  // which can happen behind the splash and be missed).
   const enter = useSharedValue(0);
   useEffect(() => {
+    if (!isHome) return;
+    enter.value = 0;
     enter.value = withDelay(
-      350,
+      120,
       withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
     );
-  }, [enter]);
+  }, [isHome, enter]);
   const enterStyle = useAnimatedStyle(() => ({
     opacity: enter.value,
     transform: [{ translateY: (1 - enter.value) * 40 }],

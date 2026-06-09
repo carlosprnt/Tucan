@@ -33,6 +33,8 @@ interface MonthCalendarProps {
   onToggleDay: (key: DateKey) => void;
   /** Cascade the cells in on mount. Off when many months are stacked. */
   animate?: boolean;
+  /** Pre-measured content width — skips the self-measure frame (no blank flash). */
+  width?: number;
 }
 
 /** Weekday-aligned month grid (Monday first). Cells cascade in; tapping a day
@@ -47,8 +49,10 @@ export function MonthCalendar({
   activeDays = ALL_DAYS,
   onToggleDay,
   animate = true,
+  width: externalWidth,
 }: MonthCalendarProps) {
-  const [width, setWidth] = useState(0);
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const width = externalWidth ?? measuredWidth;
 
   // Floor so 7 cells + 6 gaps always fit on one row — otherwise pixel rounding
   // can push the 7th column (Sunday) to wrap, leaving its column looking empty.
@@ -67,7 +71,13 @@ export function MonthCalendar({
   }
 
   return (
-    <View onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
+    <View
+      onLayout={
+        externalWidth
+          ? undefined
+          : (e: LayoutChangeEvent) => setMeasuredWidth(e.nativeEvent.layout.width)
+      }>
+
       <View style={[styles.row, { gap: GAP, marginBottom: GAP }]}>
         {WEEKDAYS.map((w, i) => (
           <View key={i} style={{ width: cellSize, alignItems: 'center' }}>

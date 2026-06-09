@@ -134,6 +134,9 @@ function MonthScroll({
 }) {
   // Hold the skeleton for at least 2s, then reveal months one at a time.
   const [revealed, setRevealed] = useState(0);
+  // Measure once so every month renders immediately at the right size (no
+  // self-measure frame, so the real month replaces its skeleton with no flash).
+  const [width, setWidth] = useState(0);
 
   useEffect(() => {
     if (revealed >= months.length) return;
@@ -148,26 +151,29 @@ function MonthScroll({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       {header}
-      {months.map((m, i) =>
-        i < revealed ? (
-          <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
-            <Text style={styles.monthLabel}>{monthLabel(m.year, m.month)}</Text>
-            <MonthCalendar
-              year={m.year}
-              month={m.month}
-              completed={completed}
-              startDate={habit.start_date}
-              today={today}
-              color={habit.color}
-              activeDays={habit.active_days}
-              animate={false}
-              onToggleDay={(key) => toggleCompletion(habit.id, key)}
-            />
-          </View>
-        ) : (
-          <MonthSkeleton key={`${m.year}-${m.month}`} />
-        ),
-      )}
+      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        {months.map((m, i) =>
+          i < revealed ? (
+            <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
+              <Text style={styles.monthLabel}>{monthLabel(m.year, m.month)}</Text>
+              <MonthCalendar
+                year={m.year}
+                month={m.month}
+                completed={completed}
+                startDate={habit.start_date}
+                today={today}
+                color={habit.color}
+                activeDays={habit.active_days}
+                animate={false}
+                width={width || undefined}
+                onToggleDay={(key) => toggleCompletion(habit.id, key)}
+              />
+            </View>
+          ) : (
+            <MonthSkeleton key={`${m.year}-${m.month}`} width={width} />
+          ),
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -234,13 +240,12 @@ function SkeletonRow({
 }
 
 /** Per-month placeholder: a label bar + 32 dots, blinking in a downward cascade. */
-function MonthSkeleton() {
-  const [width, setWidth] = useState(0);
+function MonthSkeleton({ width }: { width: number }) {
   const cellSize = width > 0 ? Math.floor((width - GAP * (WEEKDAY_COUNT - 1)) / WEEKDAY_COUNT) : 0;
   const dot = Math.max(6, Math.round(cellSize * 0.5));
 
   return (
-    <View style={styles.monthBlock} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+    <View style={styles.monthBlock}>
       <SkeletonLabel delay={0} />
       {/* Fixed weekday header — matches the real calendar so there's no jump. */}
       <View style={[styles.skeletonRow, { gap: GAP, marginBottom: GAP }]}>
