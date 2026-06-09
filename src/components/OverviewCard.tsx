@@ -5,7 +5,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitGlyph } from '@/components/HabitGlyph';
 import { YearHeatmap } from '@/components/YearHeatmap';
-import { todayKey } from '@/lib/date';
+import { scheduleLabel, todayKey } from '@/lib/date';
 import { completedDates, type Habit } from '@/store';
 
 /** Overview row: icon + name + total + the habit's year heatmap. Tap to open detail. */
@@ -31,9 +31,14 @@ export const OverviewCard = observer(function OverviewCard({
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.head}>
         <HabitGlyph icon={habit.icon} size={18} color={habit.color ?? theme.colors.ink} />
-        <Text style={styles.name} numberOfLines={1}>
-          {habit.name}
-        </Text>
+        <View style={styles.titleCol}>
+          <Text style={styles.name} numberOfLines={1}>
+            {habit.name}
+          </Text>
+          <Text style={styles.schedule} numberOfLines={1}>
+            {scheduleLabel(habit.active_days)}
+          </Text>
+        </View>
         <Text style={styles.total}>{completed.size}</Text>
       </View>
       <YearHeatmap
@@ -62,11 +67,18 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.space.sm,
   },
-  name: {
+  titleCol: {
     flex: 1,
+    gap: 2,
+  },
+  name: {
     fontSize: theme.font.body,
     fontWeight: theme.weight.semibold,
     color: theme.colors.textPrimary,
+  },
+  schedule: {
+    fontSize: theme.font.caption,
+    color: theme.colors.textSecondary,
   },
   total: {
     fontSize: theme.font.heading,

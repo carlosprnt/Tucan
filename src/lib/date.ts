@@ -22,6 +22,22 @@ export function isActiveDay(activeDays: number, key: DateKey): boolean {
   return ((activeDays >> weekdayIndex(key)) & 1) === 1;
 }
 
+const WEEKDAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAYS_MASK = 0b0011111; // Mon–Fri (31)
+const WEEKEND_MASK = 0b1100000; // Sat + Sun (96)
+
+/** Human label for a habit's active-days bitmask. */
+export function scheduleLabel(activeDays: number): string {
+  if (activeDays === ALL_DAYS) return 'All week';
+  if (activeDays === WEEKDAYS_MASK) return 'Monday to Friday';
+  if (activeDays === WEEKEND_MASK) return 'Weekend';
+  const days: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    if ((activeDays >> i) & 1) days.push(WEEKDAY_ABBR[i]);
+  }
+  return days.join(' · ');
+}
+
 /** Format a Date as a local-day key (uses the device timezone). */
 export function toDateKey(date: Date): DateKey {
   const y = date.getFullYear();
