@@ -6,7 +6,14 @@ import { SymbolView } from 'expo-symbols';
 import { PencilSimple } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { Glyph } from '@/components/Glyph';
@@ -76,7 +83,6 @@ const HabitDetail = observer(function HabitDetail() {
                 onEdit={() => router.push({ pathname: '/habit/new', params: { id: habit.id } })}
               />
               <Summary total={stats.total} percent={stats.percent} />
-              <Text style={styles.hint}>Tap any past day to fill it in.</Text>
             </View>
           }
         />
@@ -140,10 +146,10 @@ function MonthScroll({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
       {header}
-      {months.map((m, i) => (
-        <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
-          <Text style={styles.monthLabel}>{monthLabel(m.year, m.month)}</Text>
-          {i < revealed ? (
+      {months.map((m, i) =>
+        i < revealed ? (
+          <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
+            <Text style={styles.monthLabel}>{monthLabel(m.year, m.month)}</Text>
             <MonthCalendar
               year={m.year}
               month={m.month}
@@ -155,11 +161,11 @@ function MonthScroll({
               animate={false}
               onToggleDay={(key) => toggleCompletion(habit.id, key)}
             />
-          ) : (
-            <MonthSkeleton />
-          )}
-        </View>
-      ))}
+          </View>
+        ) : (
+          <MonthSkeleton key={`${m.year}-${m.month}`} />
+        ),
+      )}
     </ScrollView>
   );
 }
@@ -168,32 +174,81 @@ const CELL = 18;
 const GAP = 8;
 
 const WEEKDAY_COUNT = 7;
-const SKELETON_ROWS = 6;
+const SKELETON_DAYS = 32; // default placeholder days per month
+const CASCADE_STEP = 110; // ms between each row's blink (top → bottom)
 
-/** Placeholder matching the calendar grid: a faint dot per day-cell hole. */
+// Rows of 7 covering 32 cells: [7,7,7,7,4].
+const SKELETON_ROWS: number[] = (() => {
+  const rows: number[] = [];
+  for (let n = SKELETON_DAYS; n > 0; n -= WEEKDAY_COUNT) rows.push(Math.min(WEEKDAY_COUNT, n));
+  return rows;
+})();
+
+/** A looping fade (blink), delayed so rows ripple downward in a cascade. */
+function usePulse(delay: number) {
+  const opacity = useSharedValue(0.3);
+  useEffect(() => {
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 550 }),
+          withTiming(0.3, { duration: 550 }),
+        ),
+        -1,
+        false,
+      ),
+    );
+  }, [delay, opacity]);
+  return useAnimatedStyle(() => ({ opacity: opacity.value }));
+}
+
+function SkeletonLabel({ delay }: { delay: number }) {
+  return <Animated.View style={[styles.skeletonLabelBar, usePulse(delay)]} />;
+}
+
+function SkeletonRow({
+  delay,
+  cells,
+  cellSize,
+  dot,
+}: {
+  delay: number;
+  cells: number;
+  cellSize: number;
+  dot: number;
+}) {
+  const style = usePulse(delay);
+  return (
+    <Animated.View style={[styles.skeletonRow, { gap: GAP, marginBottom: GAP }, style]}>
+      {Array.from({ length: cells }).map((_, i) => (
+        <View key={i} style={{ width: cellSize, height: cellSize, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={[styles.skeletonDot, { width: dot, height: dot, borderRadius: dot / 2 }]} />
+        </View>
+      ))}
+    </Animated.View>
+  );
+}
+
+/** Per-month placeholder: a label bar + 32 dots, blinking in a downward cascade. */
 function MonthSkeleton() {
   const [width, setWidth] = useState(0);
   const cellSize = width > 0 ? Math.floor((width - GAP * (WEEKDAY_COUNT - 1)) / WEEKDAY_COUNT) : 0;
   const dot = Math.max(6, Math.round(cellSize * 0.5));
 
   return (
-    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-      <View style={[styles.skeletonRow, { gap: GAP, marginBottom: GAP }]}>
-        {Array.from({ length: WEEKDAY_COUNT }).map((_, i) => (
-          <View key={i} style={{ width: cellSize, alignItems: 'center' }}>
-            <View style={styles.skeletonWeekBar} />
-          </View>
+    <View style={styles.monthBlock} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <SkeletonLabel delay={0} />
+      {width > 0 &&
+        SKELETON_ROWS.map((cells, r) => (
+          <SkeletonRow
+            key={r}
+            delay={(r + 1) * CASCADE_STEP}
+            cells={cells}
+            cellSize={cellSize}
+            dot={dot}
+          />
         ))}
-      </View>
-      {width > 0 && (
-        <View style={[styles.skeletonGrid, { gap: GAP }]}>
-          {Array.from({ length: WEEKDAY_COUNT * SKELETON_ROWS }).map((_, i) => (
-            <View key={i} style={{ width: cellSize, height: cellSize, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={[styles.skeletonDot, { width: dot, height: dot, borderRadius: dot / 2 }]} />
-            </View>
-          ))}
-        </View>
-      )}
     </View>
   );
 }
@@ -358,18 +413,14 @@ const styles = StyleSheet.create((theme, rt) => ({
   skeletonRow: {
     flexDirection: 'row',
   },
-  skeletonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  skeletonWeekBar: {
-    width: 10,
-    height: 8,
-    borderRadius: 4,
+  skeletonLabelBar: {
+    width: 120,
+    height: theme.font.heading,
+    borderRadius: theme.radius.sm,
     backgroundColor: theme.colors.card,
   },
   skeletonDot: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.dotMissed,
   },
   monthLabel: {
     fontSize: theme.font.heading,
@@ -379,10 +430,6 @@ const styles = StyleSheet.create((theme, rt) => ({
   accGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  hint: {
-    fontSize: theme.font.caption,
-    color: theme.colors.textMuted,
   },
   missing: {
     fontSize: theme.font.body,
