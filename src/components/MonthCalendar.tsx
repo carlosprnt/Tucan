@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Pressable, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -155,6 +155,12 @@ function DayCell({
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const sparkleRef = useRef<SparkleBurstHandle>(null);
+  // Mount the sparkle SVG only after a cell is first completed — keeps the grid
+  // light so scrolling many months stays fluid.
+  const [bursts, setBursts] = useState(0);
+  useEffect(() => {
+    if (bursts > 0) sparkleRef.current?.play();
+  }, [bursts]);
 
   return (
     <Animated.View
@@ -172,11 +178,11 @@ function DayCell({
             withTiming(1.12, { duration: 70 }),
             withSpring(1, { damping: 18, stiffness: 300 }),
           );
-          if (!isDone) sparkleRef.current?.play(); // becoming complete
+          if (!isDone) setBursts((b) => b + 1); // becoming complete
           onToggle();
         }}
         style={styles.cell}>
-        <SparkleBurst ref={sparkleRef} color={color} />
+        {bursts > 0 && <SparkleBurst ref={sparkleRef} color={color} />}
         <Animated.View style={animStyle}>
           <Glyph size={glyphSize} state={state} color={color} />
         </Animated.View>

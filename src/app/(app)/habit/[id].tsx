@@ -4,7 +4,7 @@ import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { DotsThreeVertical } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -155,8 +155,7 @@ function MonthScroll({
   // Always show the skeleton when the calendar view opens, then reveal months
   // one at a time. (The Total view handles the instant cached re-entry.)
   const [revealed, setRevealed] = useState(0);
-  // Measure once so every month renders immediately at the right size (no
-  // self-measure frame, so the real month replaces its skeleton with no flash).
+  // Measure once so every month renders at the right size (no self-measure frame).
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
@@ -167,43 +166,56 @@ function MonthScroll({
   }, [revealed, months.length]);
 
   return (
-    <ScrollView
+    // Virtualized so only the on-screen months are mounted — heavy month grids
+    // off-screen are recycled, keeping the scroll fluid.
+    <FlatList
       style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}>
-      {header}
-      <View style={styles.monthsWrap} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-        {months.map((m, i) =>
-          i < revealed ? (
-            <View key={`${m.year}-${m.month}`} style={styles.monthBlock}>
-              <Text style={styles.monthLabel}>
-                <Text style={styles.monthName}>{monthName(m.year, m.month)}</Text>{' '}
-                <Text style={styles.monthYear}>{m.year}</Text>
-              </Text>
-              <MonthCalendar
-                year={m.year}
-                month={m.month}
-                completed={completed}
-                startDate={habit.start_date}
-                today={today}
-                color={habit.color}
-                activeDays={habit.active_days}
-                animate={false}
-                width={width || undefined}
-                onToggleDay={(key) => toggleCompletion(habit.id, key)}
-              />
-            </View>
-          ) : (
-            <MonthSkeleton key={`${m.year}-${m.month}`} width={width} />
-          ),
-        )}
-      </View>
-    </ScrollView>
+      contentContainerStyle={styles.calContent}
+      showsVerticalScrollIndicator={false}
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width - 2 * MONTH_H_PADDING)}
+      data={months}
+      keyExtractor={(m) => `${m.year}-${m.month}`}
+      ListHeaderComponent={header as React.ReactElement}
+      ItemSeparatorComponent={MonthSeparator}
+      initialNumToRender={2}
+      maxToRenderPerBatch={2}
+      windowSize={5}
+      removeClippedSubviews
+      renderItem={({ item: m, index: i }) =>
+        i < revealed ? (
+          <View style={styles.monthBlock}>
+            <Text style={styles.monthLabel}>
+              <Text style={styles.monthName}>{monthName(m.year, m.month)}</Text>{' '}
+              <Text style={styles.monthYear}>{m.year}</Text>
+            </Text>
+            <MonthCalendar
+              year={m.year}
+              month={m.month}
+              completed={completed}
+              startDate={habit.start_date}
+              today={today}
+              color={habit.color}
+              activeDays={habit.active_days}
+              animate={false}
+              width={width || undefined}
+              onToggleDay={(key) => toggleCompletion(habit.id, key)}
+            />
+          </View>
+        ) : (
+          <MonthSkeleton width={width} />
+        )
+      }
+    />
   );
 }
 
 const CELL = 18;
 const GAP = 8;
+const MONTH_H_PADDING = 24; // calendar content horizontal padding (theme.space.xl)
+
+function MonthSeparator() {
+  return <View style={{ height: 32 }} />;
+}
 
 // Total-view load: gray cascade then done cascade, ~1s overall.
 const ACC_GRAY_MS = 500;
@@ -514,11 +526,14 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
   },
+  calContent: {
+    paddingHorizontal: theme.space.xl,
+    paddingTop: theme.space.xl,
+    paddingBottom: rt.insets.bottom + 110,
+  },
   listHeader: {
     gap: theme.space.xl,
-  },
-  monthsWrap: {
-    gap: theme.space.xxl, // ≥32px between months
+    marginBottom: theme.space.xl, // space before the first month
   },
   headerRow: {
     flexDirection: 'row',
