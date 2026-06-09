@@ -493,6 +493,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingTop: theme.space.xl, // 24px from the top of the modal
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
+    flexGrow: 1, // let the Total grid center vertically in the leftover space
   },
   listHeader: {
     gap: theme.space.xl,
@@ -531,7 +532,8 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textPrimary,
   },
   section: {
-    gap: theme.space.xl,
+    flex: 1, // Total view: center the glyph grid vertically
+    justifyContent: 'center',
   },
   monthBlock: {
     gap: theme.space.md,
