@@ -224,7 +224,7 @@ const ACC_FADE_MS = 180;
 
 // Total-view zoom (spin + grow) cascade duration and size steps.
 const ZOOM_MS = 1000;
-const ZOOM_SCALES = [1, 1.3, 1.5]; // original → +30% → +20% more
+const ZOOM_SCALES = [1, 1.3]; // original ↔ +30%
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first
 const WEEKDAY_COUNT = 7;
