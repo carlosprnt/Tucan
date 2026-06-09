@@ -202,10 +202,10 @@ function MonthScroll({
 const CELL = 18;
 const GAP = 8;
 
-// Total-view load: gray cascade then done cascade, ~2s overall.
-const ACC_GRAY_MS = 1000;
-const ACC_DONE_MS = 1000;
-const ACC_FADE_MS = 220;
+// Total-view load: gray cascade then done cascade, ~1s overall.
+const ACC_GRAY_MS = 500;
+const ACC_DONE_MS = 500;
+const ACC_FADE_MS = 180;
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first
 const WEEKDAY_COUNT = 7;
