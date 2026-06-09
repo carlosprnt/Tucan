@@ -93,18 +93,18 @@ export const AppBar = observer(function AppBar() {
         <Pressable
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={mode === 'month' ? 'Calendar view' : 'Total view'}
+          accessibilityLabel={mode === 'month' ? 'View total' : 'View calendar'}
           onPress={() => {
             haptics.selection();
             detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month');
           }}
           style={({ pressed }) => [styles.viewToggle, pressed && styles.pressed]}>
           <SymbolView
-            name={mode === 'month' ? 'calendar' : 'square.grid.3x3.fill'}
+            name={mode === 'month' ? 'square.grid.3x3.fill' : 'calendar'}
             size={24}
             tintColor={theme.colors.textPrimary}
           />
-          <Text style={styles.viewToggleLabel}>{mode === 'month' ? 'Calendar' : 'Total'}</Text>
+          <Text style={styles.viewToggleLabel}>{mode === 'month' ? 'View total' : 'View calendar'}</Text>
         </Pressable>
       </>
     );
