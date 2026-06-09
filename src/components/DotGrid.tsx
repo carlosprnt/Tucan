@@ -44,6 +44,19 @@ export function DotGrid({ states, columns, cellSize = 12, gap = 6, color }: DotG
             />
           );
         }
+        // Today, still unmarked: outline only (stroke, no fill).
+        if (state === 'today') {
+          return (
+            <Path
+              key={i}
+              d={path}
+              transform={`translate(${x}, ${y})`}
+              fill="none"
+              stroke={color ?? theme.colors.ink}
+              strokeWidth={Math.max(1.5, cellSize * 0.1)}
+            />
+          );
+        }
         const fill = state === 'done' ? (color ?? theme.colors.dotDone) : theme.colors.dotMissed;
         return <Path key={i} d={path} transform={`translate(${x}, ${y})`} fill={fill} />;
       })}

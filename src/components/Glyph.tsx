@@ -31,6 +31,17 @@ export function Glyph({ size, state, color }: GlyphProps) {
     );
   }
 
+  // Today, still unmarked: outline only (stroke, no fill).
+  if (state === 'today') {
+    const stroke = color ?? theme.colors.ink;
+    const sw = Math.max(1.5, size * 0.1);
+    return (
+      <Svg width={size} height={size}>
+        <Path d={diamondPath(size)} fill="none" stroke={stroke} strokeWidth={sw} />
+      </Svg>
+    );
+  }
+
   const fill = state === 'done' ? (color ?? theme.colors.dotDone) : theme.colors.dotMissed;
 
   return (

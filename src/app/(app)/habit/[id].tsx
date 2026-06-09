@@ -314,7 +314,11 @@ function Accumulation({
             key={key}
             entering={animate ? cascadeIn(i) : undefined}
             style={{ width: CELL, height: CELL }}>
-            <Glyph size={CELL} state={completed.has(key) ? 'done' : 'missed'} color={accent} />
+            <Glyph
+              size={CELL}
+              state={completed.has(key) ? 'done' : key === today ? 'today' : 'missed'}
+              color={accent}
+            />
           </Animated.View>
         ))}
       </View>

@@ -1,14 +1,15 @@
 import { addDays, ALL_DAYS, daysBetween, isActiveDay, todayKey, type DateKey } from './date';
 
 /**
- * Three real states for a dot, plus `empty` for cells outside a habit's life
+ * Real states for a dot, plus `empty` for cells outside a habit's life
  * (before start, or on a weekday the habit isn't active).
  * - done:   completed that day
+ * - today:  today, still unmarked (outline / stroke, no fill)
  * - missed: a past active day (>= start) with no completion (solid gray)
  * - future: a day after today (ghost / dotted, never tappable)
  * - empty:  before start, or an inactive weekday
  */
-export type DotState = 'done' | 'missed' | 'future' | 'empty';
+export type DotState = 'done' | 'today' | 'missed' | 'future' | 'empty';
 
 /** States for the last `days` days ending today (used by the card mini-grid). */
 export function buildRecentStates(opts: {
@@ -28,6 +29,8 @@ export function buildRecentStates(opts: {
       states.push('empty');
     } else if (opts.completed.has(key)) {
       states.push('done');
+    } else if (key === today) {
+      states.push('today');
     } else {
       states.push('missed');
     }
@@ -53,6 +56,7 @@ export function buildMonthStates(opts: {
     if (daysBetween(today, key) > 0) states.push('future');
     else if (daysBetween(opts.startDate, key) < 0 || !isActiveDay(activeDays, key)) states.push('empty');
     else if (opts.completed.has(key)) states.push('done');
+    else if (key === today) states.push('today');
     else states.push('missed');
   }
   return states;

@@ -260,7 +260,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   viewToggle: {
     gap: theme.space.xs,
-    height: 44,
+    height: 38, // match the check pill (TodayToggle is 38)
     paddingRight: theme.space.sm,
   },
   viewToggleLabel: {
