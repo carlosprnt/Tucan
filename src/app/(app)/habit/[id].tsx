@@ -80,7 +80,6 @@ const HabitDetail = observer(function HabitDetail() {
           habit={habit}
           completed={completed}
           today={today}
-          cached={cached}
           header={
             <View style={styles.listHeader}>
               <Header
@@ -142,19 +141,17 @@ function MonthScroll({
   habit,
   completed,
   today,
-  cached,
   header,
 }: {
   months: Month[];
   habit: ReturnType<typeof getHabit> & {};
   completed: Set<DateKey>;
   today: DateKey;
-  cached: boolean;
   header: React.ReactNode;
 }) {
-  // Cached habits render every month right away — no skeleton on re-entry.
-  // First-time habits hold the skeleton, then reveal one month at a time.
-  const [revealed, setRevealed] = useState(cached ? months.length : 0);
+  // Always show the skeleton when the calendar view opens, then reveal months
+  // one at a time. (The Total view handles the instant cached re-entry.)
+  const [revealed, setRevealed] = useState(0);
   // Measure once so every month renders immediately at the right size (no
   // self-measure frame, so the real month replaces its skeleton with no flash).
   const [width, setWidth] = useState(0);
