@@ -2,7 +2,7 @@ import '@/theme/unistyles';
 
 import { observer, use$ } from '@legendapp/state/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { PencilSimple } from 'phosphor-react-native';
+import { DotsThreeVertical } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
@@ -345,7 +345,7 @@ function Header({ title, onEdit }: { title: string; onEdit?: () => void }) {
       </Text>
       {onEdit && (
         <Pressable hitSlop={12} onPress={onEdit} accessibilityRole="button" accessibilityLabel="Edit habit" style={styles.iconBtn}>
-          <PencilSimple size={24} weight="bold" color={theme.colors.textPrimary} />
+          <DotsThreeVertical size={26} weight="bold" color={theme.colors.textSecondary} />
         </Pressable>
       )}
     </View>
