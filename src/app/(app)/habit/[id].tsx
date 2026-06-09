@@ -40,6 +40,8 @@ const HabitDetail = observer(function HabitDetail() {
     detailUI$.mode.set('month');
     return () => {
       detailUI$.habitId.set(null);
+      // Reset so the next habit opens on the calendar, not a stale Total view.
+      detailUI$.mode.set('month');
     };
   }, [id]);
 
@@ -114,6 +116,10 @@ export default HabitDetail;
 
 type Month = { year: number; month: number };
 
+// Habit ids whose month grid has fully rendered this session — re-entering them
+// skips the skeleton and shows the data right away.
+const loadedMonthsCache = new Set<string>();
+
 /**
  * Vertical month list that reveals the current month immediately, then fills in
  * older months one at a time — each shows a skeleton until it's rendered, so
@@ -132,18 +138,23 @@ function MonthScroll({
   today: DateKey;
   header: React.ReactNode;
 }) {
-  // Hold the skeleton for at least 2s, then reveal months one at a time.
-  const [revealed, setRevealed] = useState(0);
+  // Habits opened before this session render fully right away (cached) — no
+  // skeleton on re-entry. First-time habits hold the skeleton, then reveal.
+  const cached = loadedMonthsCache.has(habit.id);
+  const [revealed, setRevealed] = useState(cached ? months.length : 0);
   // Measure once so every month renders immediately at the right size (no
   // self-measure frame, so the real month replaces its skeleton with no flash).
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
-    if (revealed >= months.length) return;
+    if (revealed >= months.length) {
+      loadedMonthsCache.add(habit.id);
+      return;
+    }
     const delay = revealed === 0 ? 2000 : 45;
     const t = setTimeout(() => setRevealed((r) => r + 1), delay);
     return () => clearTimeout(t);
-  }, [revealed, months.length]);
+  }, [revealed, months.length, habit.id]);
 
   return (
     <ScrollView

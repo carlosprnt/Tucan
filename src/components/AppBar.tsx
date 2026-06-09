@@ -69,7 +69,7 @@ export const AppBar = observer(function AppBar() {
   const isDetail = pathname.startsWith('/habit/') && !isCreate;
 
   // Detail bar is a bit smaller and tighter.
-  const barPadding = isDetail ? theme.space.xs : theme.space.sm;
+  const barPadding = theme.space.sm;
   const gap = isDetail ? theme.space.sm : theme.space.lg;
   const contentHeight = isDetail ? 44 : 52;
 
@@ -301,8 +301,6 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.space.xs,
     height: 44,
-    paddingLeft: theme.space.sm,
-    paddingRight: theme.space.lg,
   },
   viewToggleLabel: {
     fontSize: theme.font.body,
