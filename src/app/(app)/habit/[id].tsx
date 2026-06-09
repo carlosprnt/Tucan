@@ -406,7 +406,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     paddingHorizontal: theme.space.xl, // 24px side margins
-    paddingTop: theme.space.lg, // modal sheet: sit near the top with a clean margin
+    paddingTop: theme.space.xl, // 24px from the top of the modal
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
   },
@@ -429,7 +429,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   iconBtn: {
     width: 40,
     height: 40,
-    alignItems: 'center',
+    alignItems: 'flex-end', // hug the right edge so the icon sits at the 24px margin
     justifyContent: 'center',
   },
   summary: {
