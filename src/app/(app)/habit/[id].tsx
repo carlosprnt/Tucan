@@ -344,9 +344,15 @@ function Accumulation({
     setZoomed((z) => !z);
   };
 
+  // Center the grid as a block (exact column count), but left-align the cells
+  // inside so a lone last glyph isn't stranded in the middle.
+  const [availW, setAvailW] = useState(0);
+  const columns = availW > 0 ? Math.max(1, Math.floor((availW + GAP) / (CELL + GAP))) : 0;
+  const gridWidth = columns > 0 ? columns * (CELL + GAP) - GAP : undefined;
+
   return (
-    <View style={styles.section}>
-      <View style={styles.accStack}>
+    <View style={styles.section} onLayout={(e) => setAvailW(e.nativeEvent.layout.width)}>
+      <View style={[styles.accStack, gridWidth ? { width: gridWidth } : null]}>
         {/* Base layer: gray (and today's outline) */}
         <View style={[styles.accGrid, { gap: GAP }]}>
           {days.map((key, i) => {
@@ -566,11 +572,11 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   accStack: {
     position: 'relative',
+    alignSelf: 'center', // center the grid block on screen
   },
   accGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center', // center the glyphs horizontally
+    flexWrap: 'wrap', // left-aligned rows inside the centered block
   },
   cellPress: {
     flex: 1,
