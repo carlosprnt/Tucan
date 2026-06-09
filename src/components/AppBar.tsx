@@ -162,7 +162,7 @@ function Fab({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   wrap: {
     position: 'absolute',
     left: 0,
@@ -183,6 +183,9 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.card,
+    // The shadow is invisible on the dark canvas, so add a subtle border there.
+    borderWidth: rt.themeName === 'dark' ? 1 : 0,
+    borderColor: theme.colors.separator,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 16,
