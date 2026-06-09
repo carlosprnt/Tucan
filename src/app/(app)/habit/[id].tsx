@@ -132,11 +132,13 @@ function MonthScroll({
   today: DateKey;
   header: React.ReactNode;
 }) {
-  const [revealed, setRevealed] = useState(1);
+  // Hold the skeleton for at least 2s, then reveal months one at a time.
+  const [revealed, setRevealed] = useState(0);
 
   useEffect(() => {
     if (revealed >= months.length) return;
-    const t = setTimeout(() => setRevealed((r) => r + 1), 45);
+    const delay = revealed === 0 ? 2000 : 45;
+    const t = setTimeout(() => setRevealed((r) => r + 1), delay);
     return () => clearTimeout(t);
   }, [revealed, months.length]);
 
