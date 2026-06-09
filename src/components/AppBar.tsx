@@ -5,9 +5,6 @@ import { useEffect, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
   Easing,
-  FadeIn,
-  FadeOut,
-  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -29,15 +26,10 @@ import { completedDates, detailUI$, getHabit, homeUI$, toggleCompletion } from '
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const BAR_LAYOUT = LinearTransition.duration(240);
-// Fixed region height so the bar morphs from its center (vertically centered).
-const REGION_HEIGHT = 68;
-
 /**
- * Single persistent floating bar. It stays mounted across navigation and morphs
- * its items by context — main tabs (Habits · + · Settings) or, inside a habit,
- * contextual actions (mark today · Month/All-time). The detail bar is smaller;
- * the bar resizes from its center while the items crossfade.
+ * Single persistent floating bar. It stays mounted across navigation and shows
+ * context-specific actions — main tabs (Settings · + · view) or, inside a
+ * habit, two pills (mark today · view selector).
  */
 export const AppBar = observer(function AppBar() {
   const pathname = usePathname();
@@ -68,12 +60,7 @@ export const AppBar = observer(function AppBar() {
   const isCreate = pathname === '/habit/new';
   const isDetail = pathname.startsWith('/habit/') && !isCreate;
 
-  // Detail bar is a bit smaller and tighter.
-  const barPadding = theme.space.sm;
-  const gap = isDetail ? theme.space.sm : theme.space.lg;
-  const contentHeight = isDetail ? 44 : 52;
-
-  const renderDetailItems = (): ReactNode => {
+  if (isDetail) {
     const habitId = detailUI$.habitId.get();
     const mode = detailUI$.mode.get();
     const today = todayKey();
@@ -81,24 +68,29 @@ export const AppBar = observer(function AppBar() {
     const done = habitId ? completedDates(habitId).has(today) : false;
 
     return (
-      <>
-        <TodayToggle
-          done={done}
-          color={habit?.color}
-          onPress={() => {
-            if (habitId) toggleCompletion(habitId, today);
-          }}
-        />
+      <View
+        pointerEvents="box-none"
+        style={[styles.wrap, styles.detailRow, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
+        {/* Mark-today pill */}
+        <View style={styles.detailPill}>
+          <TodayToggle
+            done={done}
+            color={habit?.color}
+            onPress={() => {
+              if (habitId) toggleCompletion(habitId, today);
+            }}
+          />
+        </View>
 
+        {/* View selector pill */}
         <Pressable
-          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={mode === 'month' ? 'View total' : 'View calendar'}
           onPress={() => {
             haptics.selection();
             detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month');
           }}
-          style={({ pressed }) => [styles.viewToggle, pressed && styles.pressed]}>
+          style={({ pressed }) => [styles.detailPill, styles.viewToggle, pressed && styles.pressed]}>
           <SymbolView
             name={mode === 'month' ? 'square.grid.3x3.fill' : 'calendar'}
             size={24}
@@ -106,29 +98,6 @@ export const AppBar = observer(function AppBar() {
           />
           <Text style={styles.viewToggleLabel}>{mode === 'month' ? 'View total' : 'View calendar'}</Text>
         </Pressable>
-      </>
-    );
-  };
-
-  if (isDetail) {
-    return (
-      <View
-        pointerEvents="box-none"
-        style={[styles.wrap, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
-        <View style={styles.region} pointerEvents="box-none">
-          <Animated.View layout={BAR_LAYOUT} style={[styles.bar, { padding: barPadding }]}>
-            <View style={[styles.sizer, { gap, height: contentHeight }]} pointerEvents="none">
-              {renderDetailItems()}
-            </View>
-            <Animated.View
-              key="detail"
-              entering={FadeIn.duration(220)}
-              exiting={FadeOut.duration(140)}
-              style={[styles.layer, { gap }]}>
-              {renderDetailItems()}
-            </Animated.View>
-          </Animated.View>
-        </View>
       </View>
     );
   }
@@ -268,12 +237,17 @@ const styles = StyleSheet.create((theme) => ({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  region: {
-    height: REGION_HEIGHT,
+  detailRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4, // the two pills sit 4px apart
   },
-  bar: {
+  detailPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.space.sm,
     borderRadius: theme.radius.pill,
     backgroundColor: theme.colors.card,
     borderWidth: 1,
@@ -284,24 +258,9 @@ const styles = StyleSheet.create((theme) => ({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  sizer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0,
-  },
-  layer: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   viewToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: theme.space.xs,
     height: 44,
-    // Doubles the bar's right margin (bar padding + this) vs the other sides.
     paddingRight: theme.space.sm,
   },
   viewToggleLabel: {
