@@ -19,6 +19,7 @@ import Animated, {
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { DetailActionBar } from '@/components/DetailActionBar';
+import { DragSheet } from '@/components/DragSheet';
 import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
 import { haptics } from '@/lib/haptics';
@@ -76,7 +77,7 @@ const HabitDetail = observer(function HabitDetail() {
   const months = monthsDescending(habit.start_date, today);
 
   return (
-    <View style={styles.screen}>
+    <DragSheet onClose={() => router.back()}>
       {mode === 'month' ? (
         <MonthScroll
           months={months}
@@ -122,7 +123,7 @@ const HabitDetail = observer(function HabitDetail() {
         onToggleMode={() => detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month')}
         onClose={() => router.back()}
       />
-    </View>
+    </DragSheet>
   );
 });
 
@@ -350,15 +351,9 @@ function Accumulation({
     seq.value = withTiming(1, { duration: ZOOM_MS, easing: Easing.linear });
   };
 
-  // Center the grid as a block (exact column count), but left-align the cells
-  // inside so a lone last glyph isn't stranded in the middle.
-  const [availW, setAvailW] = useState(0);
-  const columns = availW > 0 ? Math.max(1, Math.floor((availW + GAP) / (CELL + GAP))) : 0;
-  const gridWidth = columns > 0 ? columns * (CELL + GAP) - GAP : undefined;
-
   return (
-    <View style={styles.section} onLayout={(e) => setAvailW(e.nativeEvent.layout.width)}>
-      <View style={[styles.accStack, gridWidth ? { width: gridWidth } : null]}>
+    <View style={styles.section}>
+      <View style={styles.accStack}>
         {/* Base layer: gray (and today's outline) */}
         <View style={[styles.accGrid, { gap: GAP }]}>
           {days.map((key, i) => {
@@ -516,7 +511,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   content: {
     paddingHorizontal: theme.space.xl, // 24px side margins
-    paddingTop: theme.space.xl, // 24px from the top of the modal
+    paddingTop: theme.space.sm, // grabber zone already provides top spacing
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
   },
@@ -592,11 +587,10 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   accStack: {
     position: 'relative',
-    alignSelf: 'center', // center the grid block on screen
   },
   accGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap', // left-aligned rows inside the centered block
+    flexWrap: 'wrap', // full width (24px content margins), left-aligned
   },
   cellPress: {
     flex: 1,
