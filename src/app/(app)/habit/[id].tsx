@@ -327,12 +327,13 @@ function Accumulation({
   const doneEnter = (i: number) =>
     animate ? FadeIn.delay(ACC_GRAY_MS + (i / n) * ACC_DONE_MS).duration(ACC_FADE_MS) : undefined;
 
-  // Tapping any glyph other than today's cycles the grid size 1× → 2× → 4× → 1×.
-  const [zoom, setZoom] = useState(1);
-  const cell = CELL * zoom;
+  // Tapping any glyph other than today's toggles the grid size between the
+  // original and 30% larger.
+  const [zoomed, setZoomed] = useState(false);
+  const cell = Math.round(CELL * (zoomed ? 1.3 : 1));
   const cycleZoom = () => {
     haptics.selection();
-    setZoom((z) => (z >= 4 ? 1 : z * 2));
+    setZoomed((z) => !z);
   };
 
   return (
