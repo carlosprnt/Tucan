@@ -493,7 +493,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingTop: theme.space.xl, // 24px from the top of the modal
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
-    flexGrow: 1, // let the Total grid center vertically in the leftover space
   },
   listHeader: {
     gap: theme.space.xl,
@@ -532,8 +531,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textPrimary,
   },
   section: {
-    flex: 1, // Total view: center the glyph grid vertically
-    justifyContent: 'center',
+    gap: theme.space.xl,
   },
   monthBlock: {
     gap: theme.space.md,
@@ -572,6 +570,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   accGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center', // center the glyphs horizontally
   },
   cellPress: {
     flex: 1,
