@@ -34,14 +34,17 @@ const HabitDetail = observer(function HabitDetail() {
   const { theme } = useUnistyles();
 
   const mode = use$(detailUI$.mode);
+  // True if this habit was already opened earlier this session — its data is
+  // cached, so render it instantly (no skeleton / no entrance cascade).
+  const cached = id ? loadedHabits.has(id) : false;
 
   useEffect(() => {
     detailUI$.habitId.set(id ?? null);
-    detailUI$.mode.set('month');
+    detailUI$.mode.set('accumulation'); // open on the year/Total view first
     return () => {
       detailUI$.habitId.set(null);
-      // Reset so the next habit opens on the calendar, not a stale Total view.
-      detailUI$.mode.set('month');
+      detailUI$.mode.set('accumulation');
+      if (id) loadedHabits.add(id); // mark loaded for instant re-entry
     };
   }, [id]);
 
@@ -77,6 +80,7 @@ const HabitDetail = observer(function HabitDetail() {
           habit={habit}
           completed={completed}
           today={today}
+          cached={cached}
           header={
             <View style={styles.listHeader}>
               <Header
@@ -105,6 +109,7 @@ const HabitDetail = observer(function HabitDetail() {
             today={today}
             activeDays={habit.active_days}
             accent={accent}
+            animate={!cached}
           />
         </ScrollView>
       )}
@@ -116,9 +121,9 @@ export default HabitDetail;
 
 type Month = { year: number; month: number };
 
-// Habit ids whose month grid has fully rendered this session — re-entering them
-// skips the skeleton and shows the data right away.
-const loadedMonthsCache = new Set<string>();
+// Habit ids opened earlier this session — re-entering them skips the skeleton
+// and entrance cascade and shows the data right away.
+const loadedHabits = new Set<string>();
 
 /**
  * Vertical month list that reveals the current month immediately, then fills in
@@ -130,31 +135,29 @@ function MonthScroll({
   habit,
   completed,
   today,
+  cached,
   header,
 }: {
   months: Month[];
   habit: ReturnType<typeof getHabit> & {};
   completed: Set<DateKey>;
   today: DateKey;
+  cached: boolean;
   header: React.ReactNode;
 }) {
-  // Habits opened before this session render fully right away (cached) — no
-  // skeleton on re-entry. First-time habits hold the skeleton, then reveal.
-  const cached = loadedMonthsCache.has(habit.id);
+  // Cached habits render every month right away — no skeleton on re-entry.
+  // First-time habits hold the skeleton, then reveal one month at a time.
   const [revealed, setRevealed] = useState(cached ? months.length : 0);
   // Measure once so every month renders immediately at the right size (no
   // self-measure frame, so the real month replaces its skeleton with no flash).
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
-    if (revealed >= months.length) {
-      loadedMonthsCache.add(habit.id);
-      return;
-    }
+    if (revealed >= months.length) return;
     const delay = revealed === 0 ? 2000 : 45;
     const t = setTimeout(() => setRevealed((r) => r + 1), delay);
     return () => clearTimeout(t);
-  }, [revealed, months.length, habit.id]);
+  }, [revealed, months.length]);
 
   return (
     <ScrollView
@@ -286,12 +289,14 @@ function Accumulation({
   today,
   activeDays,
   accent,
+  animate,
 }: {
   completed: Set<DateKey>;
   startDate: DateKey;
   today: DateKey;
   activeDays: number;
   accent: string;
+  animate: boolean;
 }) {
   // Every ACTIVE day from start through today: done (accent) or not done (gray).
   const count = Math.max(1, daysBetween(startDate, today) + 1);
@@ -305,7 +310,10 @@ function Accumulation({
     <View style={styles.section}>
       <View style={[styles.accGrid, { gap: GAP }]}>
         {days.map((key, i) => (
-          <Animated.View key={key} entering={cascadeIn(i)} style={{ width: CELL, height: CELL }}>
+          <Animated.View
+            key={key}
+            entering={animate ? cascadeIn(i) : undefined}
+            style={{ width: CELL, height: CELL }}>
             <Glyph size={CELL} state={completed.has(key) ? 'done' : 'missed'} color={accent} />
           </Animated.View>
         ))}
