@@ -215,7 +215,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderColor: theme.colors.separator,
     borderRadius: theme.radius.pill,
     paddingHorizontal: theme.space.md,
-    paddingVertical: theme.space.xs,
+    paddingVertical: theme.space.md,
     overflow: 'hidden',
   },
   title: {
