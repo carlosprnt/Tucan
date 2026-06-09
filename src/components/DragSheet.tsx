@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Dimensions, View } from 'react-native';
+import { Dimensions, Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -13,6 +13,8 @@ import Animated, {
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 /* eslint-disable react-hooks/immutability */
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const H = Dimensions.get('window').height;
 const DISMISS_DISTANCE = H * 0.22;
@@ -61,7 +63,12 @@ export function DragSheet({ onClose, children }: { onClose: () => void; children
 
   return (
     <View style={styles.fill}>
-      <Animated.View pointerEvents="none" style={[styles.backdrop, backdropStyle]} />
+      <AnimatedPressable
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        onPress={dismiss}
+        style={[styles.backdrop, backdropStyle]}
+      />
       <Animated.View
         style={[
           styles.sheet,
