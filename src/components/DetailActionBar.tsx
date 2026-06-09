@@ -28,7 +28,7 @@ export function DetailActionBar({
   onToggleMode: () => void;
   onClose: () => void;
 }) {
-  const { theme, rt } = useUnistyles();
+  const { theme } = useUnistyles();
   const [barW, setBarW] = useState(0);
   const [checkW, setCheckW] = useState(0);
   const [viewW, setViewW] = useState(0);
@@ -52,7 +52,7 @@ export function DetailActionBar({
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.wrap, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
+      style={[styles.wrap, { paddingBottom: theme.space.xl }]}>
       <View style={styles.bar} pointerEvents="box-none" onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
         {/* Close pill — bottom-left */}
         <Pressable

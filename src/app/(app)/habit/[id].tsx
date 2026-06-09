@@ -405,7 +405,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     flex: 1,
   },
   content: {
-    paddingHorizontal: theme.space.lg,
+    paddingHorizontal: theme.space.xl, // 24px side margins
     paddingTop: theme.space.lg, // modal sheet: sit near the top with a clean margin
     paddingBottom: rt.insets.bottom + 110,
     gap: theme.space.xl,
