@@ -13,8 +13,10 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { HabitCard } from '@/components/HabitCard';
 import { OverviewCard } from '@/components/OverviewCard';
 import { TopFade } from '@/components/TopFade';
+import { daysBetween, isActiveDay, todayKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import {
+  completedDates,
   homeUI$,
   isStoreHydrated,
   listHabits,
@@ -32,6 +34,9 @@ const Home = observer(function Home() {
   const habits = listHabits();
   const hydrated = isStoreHydrated();
   const overview = use$(homeUI$.overview);
+
+  // Today's progress: of the habits scheduled today, how many are checked.
+  const todayLabel = todayProgressLabel(habits);
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Habit>) => (
     <ScaleDecorator activeScale={1.03}>
@@ -61,7 +66,7 @@ const Home = observer(function Home() {
         containerStyle={styles.screen}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={<Header overview={overview} habits={habits} />}
+        ListHeaderComponent={<Header overview={overview} habits={habits} todayLabel={todayLabel} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={hydrated ? <EmptyState /> : <SkeletonList />}
       />
@@ -73,19 +78,30 @@ const Home = observer(function Home() {
 
 export default Home;
 
-function Header({ overview, habits }: { overview: boolean; habits: Habit[] }) {
+function Header({
+  overview,
+  habits,
+  todayLabel,
+}: {
+  overview: boolean;
+  habits: Habit[];
+  todayLabel: string | null;
+}) {
   return (
     <View style={styles.header}>
-      <View style={styles.titleBlock}>
-        <Text style={styles.title}>Your habits</Text>
-        {overview && (
-          <Animated.Text
-            entering={FadeInDown.duration(220)}
-            exiting={FadeOutUp.duration(140)}
-            style={styles.subtitle}>
-            Overview
-          </Animated.Text>
-        )}
+      <View style={styles.titleRow}>
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>Your habits</Text>
+          {overview && (
+            <Animated.Text
+              entering={FadeInDown.duration(220)}
+              exiting={FadeOutUp.duration(140)}
+              style={styles.subtitle}>
+              Overview
+            </Animated.Text>
+          )}
+        </View>
+        {todayLabel && <Text style={styles.todayProgress}>{todayLabel}</Text>}
       </View>
 
       {overview && habits.length > 0 && (
@@ -121,6 +137,18 @@ function Stat({ value, label }: { value: string; label: string }) {
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
+}
+
+/** "All done" / "60% done" for the habits scheduled today, or null if none. */
+function todayProgressLabel(habits: Habit[]): string | null {
+  const today = todayKey();
+  const due = habits.filter(
+    (h) => isActiveDay(h.active_days, today) && daysBetween(h.start_date, today) >= 0,
+  );
+  if (due.length === 0) return null;
+  const done = due.filter((h) => completedDates(h.id).has(today)).length;
+  if (done === due.length) return 'All done';
+  return `${Math.round((done / due.length) * 100)}% done`;
 }
 
 function SkeletonList() {
@@ -170,8 +198,19 @@ const styles = StyleSheet.create((theme, rt) => ({
     marginBottom: theme.space.md,
     gap: theme.space.lg,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: theme.space.sm,
+  },
   titleBlock: {
     flexShrink: 1,
+  },
+  todayProgress: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.medium,
+    color: theme.colors.textSecondary,
   },
   title: {
     fontSize: theme.font.title,
