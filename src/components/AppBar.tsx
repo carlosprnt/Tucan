@@ -70,34 +70,45 @@ export const AppBar = observer(function AppBar() {
     return (
       <View
         pointerEvents="box-none"
-        style={[styles.wrap, styles.detailRow, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
-        {/* Mark-today pill */}
-        <View style={styles.detailPill}>
-          <TodayToggle
-            done={done}
-            color={habit?.color}
-            onPress={() => {
-              if (habitId) toggleCompletion(habitId, today);
-            }}
-          />
-        </View>
+        style={[styles.wrap, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
+        <View style={styles.detailBar} pointerEvents="box-none">
+          {/* Mark-today pill — centered on screen */}
+          <View style={styles.detailCheckCenter} pointerEvents="box-none">
+            <View style={styles.detailPill}>
+              <TodayToggle
+                done={done}
+                color={habit?.color}
+                onPress={() => {
+                  if (habitId) toggleCompletion(habitId, today);
+                }}
+              />
+            </View>
+          </View>
 
-        {/* View selector pill */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={mode === 'month' ? 'View total' : 'View calendar'}
-          onPress={() => {
-            haptics.selection();
-            detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month');
-          }}
-          style={({ pressed }) => [styles.detailPill, styles.viewToggle, pressed && styles.pressed]}>
-          <SymbolView
-            name={mode === 'month' ? 'square.grid.3x3.fill' : 'calendar'}
-            size={24}
-            tintColor={theme.colors.textPrimary}
-          />
-          <Text style={styles.viewToggleLabel}>{mode === 'month' ? 'View total' : 'View calendar'}</Text>
-        </Pressable>
+          {/* View selector pill — aligned to the right edge */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={mode === 'month' ? 'View total' : 'View calendar'}
+            onPress={() => {
+              haptics.selection();
+              detailUI$.mode.set(mode === 'month' ? 'accumulation' : 'month');
+            }}
+            style={({ pressed }) => [
+              styles.detailPill,
+              styles.viewToggle,
+              styles.detailViewRight,
+              pressed && styles.pressed,
+            ]}>
+            <SymbolView
+              name={mode === 'month' ? 'square.grid.3x3.fill' : 'calendar'}
+              size={24}
+              tintColor={theme.colors.textPrimary}
+            />
+            <Text style={styles.viewToggleLabel}>
+              {mode === 'month' ? 'View total' : 'View calendar'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -237,11 +248,21 @@ const styles = StyleSheet.create((theme) => ({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  detailRow: {
-    flexDirection: 'row',
+  detailBar: {
+    width: '100%',
+    height: 54,
+    justifyContent: 'center',
+  },
+  detailCheckCenter: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4, // the two pills sit 4px apart
+  },
+  detailViewRight: {
+    position: 'absolute',
+    right: theme.space.lg,
+    top: 0,
+    bottom: 0,
   },
   detailPill: {
     flexDirection: 'row',
@@ -261,7 +282,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   viewToggle: {
     gap: theme.space.xs,
-    paddingHorizontal: theme.space.sm,
+    paddingHorizontal: theme.space.sm + 10, // a bit more breathing room each side
   },
   viewToggleLabel: {
     fontSize: theme.font.body,
