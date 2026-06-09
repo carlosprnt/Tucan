@@ -6,7 +6,9 @@ import { DotsThreeVertical } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
+  Easing,
   FadeIn,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -208,6 +210,9 @@ const ACC_GRAY_MS = 500;
 const ACC_DONE_MS = 500;
 const ACC_FADE_MS = 180;
 
+// Total-view zoom (spin + grow) cascade duration.
+const ZOOM_MS = 1000;
+
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first
 const WEEKDAY_COUNT = 7;
 const SKELETON_DAYS = 32; // default placeholder days per month
@@ -327,11 +332,14 @@ function Accumulation({
   const doneEnter = (i: number) =>
     animate ? FadeIn.delay(ACC_GRAY_MS + (i / n) * ACC_DONE_MS).duration(ACC_FADE_MS) : undefined;
 
-  // Tapping any glyph other than today's toggles the grid size between the
-  // original and 30% larger.
+  // Tapping any glyph other than today's toggles a zoom: every glyph spins 90°
+  // and grows 30%, cascading left→right / top→bottom over 1s.
   const [zoomed, setZoomed] = useState(false);
-  const cell = Math.round(CELL * (zoomed ? 1.3 : 1));
-  const cycleZoom = () => {
+  const seq = useSharedValue(0);
+  useEffect(() => {
+    seq.value = withTiming(zoomed ? 1 : 0, { duration: ZOOM_MS, easing: Easing.linear });
+  }, [zoomed, seq]);
+  const toggleZoom = () => {
     haptics.selection();
     setZoomed((z) => !z);
   };
@@ -344,11 +352,15 @@ function Accumulation({
           {days.map((key, i) => {
             const isToday = key === today;
             return (
-              <Animated.View key={key} entering={grayEnter(i)} style={{ width: cell, height: cell }}>
-                <Pressable disabled={isToday} onPress={cycleZoom} style={styles.cellPress}>
-                  <Glyph size={cell} state={isToday ? 'today' : 'missed'} color={accent} />
-                </Pressable>
-              </Animated.View>
+              <ZoomCell
+                key={key}
+                i={i}
+                n={n}
+                seq={seq}
+                entering={grayEnter(i)}
+                onPress={isToday ? undefined : toggleZoom}>
+                <Glyph size={CELL} state={isToday ? 'today' : 'missed'} color={accent} />
+              </ZoomCell>
             );
           })}
         </View>
@@ -356,16 +368,54 @@ function Accumulation({
         <View style={[styles.accGrid, styles.accOverlay, { gap: GAP }]} pointerEvents="none">
           {days.map((key, i) =>
             completed.has(key) ? (
-              <Animated.View key={key} entering={doneEnter(i)} style={{ width: cell, height: cell }}>
-                <Glyph size={cell} state="done" color={accent} />
-              </Animated.View>
+              <ZoomCell key={key} i={i} n={n} seq={seq} entering={doneEnter(i)}>
+                <Glyph size={CELL} state="done" color={accent} />
+              </ZoomCell>
             ) : (
-              <View key={key} style={{ width: cell, height: cell }} />
+              <View key={key} style={{ width: CELL, height: CELL }} />
             ),
           )}
         </View>
       </View>
     </View>
+  );
+}
+
+/** A grid cell whose glyph spins 90° + grows 30% as `seq` sweeps, staggered by
+ *  index so the effect cascades across the grid. */
+function ZoomCell({
+  i,
+  n,
+  seq,
+  entering,
+  onPress,
+  children,
+}: {
+  i: number;
+  n: number;
+  seq: SharedValue<number>;
+  entering?: ReturnType<typeof FadeIn.delay>;
+  onPress?: () => void;
+  children: React.ReactNode;
+}) {
+  const animStyle = useAnimatedStyle(() => {
+    const window = 0.5; // each glyph's transition spans half of the sweep
+    const start = (i / n) * (1 - window);
+    const p = Math.min(1, Math.max(0, (seq.value - start) / window));
+    return { transform: [{ scale: 1 + 0.3 * p }, { rotate: `${90 * p}deg` }] };
+  });
+  return (
+    <Animated.View entering={entering} style={styles.zoomCell}>
+      <Animated.View style={[styles.zoomInner, animStyle]}>
+        {onPress ? (
+          <Pressable onPress={onPress} style={styles.cellPress}>
+            {children}
+          </Pressable>
+        ) : (
+          children
+        )}
+      </Animated.View>
+    </Animated.View>
   );
 }
 
@@ -522,6 +572,15 @@ const styles = StyleSheet.create((theme, rt) => ({
     flexWrap: 'wrap',
   },
   cellPress: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomCell: {
+    width: CELL,
+    height: CELL,
+  },
+  zoomInner: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
