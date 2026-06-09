@@ -301,6 +301,8 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.space.xs,
     height: 44,
+    // Doubles the bar's right margin (bar padding + this) vs the other sides.
+    paddingRight: theme.space.sm,
   },
   viewToggleLabel: {
     fontSize: theme.font.body,
