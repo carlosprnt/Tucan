@@ -6,6 +6,7 @@ import { DotsThreeVertical } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -18,7 +19,6 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { DetailActionBar } from '@/components/DetailActionBar';
 import { Glyph } from '@/components/Glyph';
 import { MonthCalendar } from '@/components/MonthCalendar';
-import { cascadeIn } from '@/lib/anim';
 import { addDays, daysBetween, fromDateKey, isActiveDay, todayKey, type DateKey } from '@/lib/date';
 import {
   completedDates,
@@ -202,6 +202,11 @@ function MonthScroll({
 const CELL = 18;
 const GAP = 8;
 
+// Total-view load: gray cascade then done cascade, ~2s overall.
+const ACC_GRAY_MS = 1000;
+const ACC_DONE_MS = 1000;
+const ACC_FADE_MS = 220;
+
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first
 const WEEKDAY_COUNT = 7;
 const SKELETON_DAYS = 32; // default placeholder days per month
@@ -313,21 +318,37 @@ function Accumulation({
     if (isActiveDay(activeDays, key)) days.push(key);
   }
 
+  // Two-phase cascade (left→right, top→bottom) over 2s: first every glyph in
+  // gray, then the completed ones fill in — done as an overlay on the gray base.
+  const n = Math.max(1, days.length);
+  const grayEnter = (i: number) =>
+    animate ? FadeIn.delay((i / n) * ACC_GRAY_MS).duration(ACC_FADE_MS) : undefined;
+  const doneEnter = (i: number) =>
+    animate ? FadeIn.delay(ACC_GRAY_MS + (i / n) * ACC_DONE_MS).duration(ACC_FADE_MS) : undefined;
+
   return (
     <View style={styles.section}>
-      <View style={[styles.accGrid, { gap: GAP }]}>
-        {days.map((key, i) => (
-          <Animated.View
-            key={key}
-            entering={animate ? cascadeIn(i) : undefined}
-            style={{ width: CELL, height: CELL }}>
-            <Glyph
-              size={CELL}
-              state={completed.has(key) ? 'done' : key === today ? 'today' : 'missed'}
-              color={accent}
-            />
-          </Animated.View>
-        ))}
+      <View style={styles.accStack}>
+        {/* Base layer: gray (and today's outline) */}
+        <View style={[styles.accGrid, { gap: GAP }]}>
+          {days.map((key, i) => (
+            <Animated.View key={key} entering={grayEnter(i)} style={{ width: CELL, height: CELL }}>
+              <Glyph size={CELL} state={key === today ? 'today' : 'missed'} color={accent} />
+            </Animated.View>
+          ))}
+        </View>
+        {/* Done overlay: completed days fill in over the gray base */}
+        <View style={[styles.accGrid, styles.accOverlay, { gap: GAP }]} pointerEvents="none">
+          {days.map((key, i) =>
+            completed.has(key) ? (
+              <Animated.View key={key} entering={doneEnter(i)} style={{ width: CELL, height: CELL }}>
+                <Glyph size={CELL} state="done" color={accent} />
+              </Animated.View>
+            ) : (
+              <View key={key} style={{ width: CELL, height: CELL }} />
+            ),
+          )}
+        </View>
       </View>
     </View>
   );
@@ -478,9 +499,15 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
   },
+  accStack: {
+    position: 'relative',
+  },
   accGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  accOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   missing: {
     fontSize: theme.font.body,
