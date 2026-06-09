@@ -18,7 +18,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { TodayToggle } from '@/components/TodayToggle';
 import { todayKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
-import { completedDates, detailUI$, homeUI$, toggleCompletion } from '@/store';
+import { completedDates, detailUI$, getHabit, homeUI$, toggleCompletion } from '@/store';
 
 /*
  * Reanimated shared-value writes (`sv.value = ...`) are the library's official
@@ -77,12 +77,14 @@ export const AppBar = observer(function AppBar() {
     const habitId = detailUI$.habitId.get();
     const mode = detailUI$.mode.get();
     const today = todayKey();
+    const habit = habitId ? getHabit(habitId) : undefined;
     const done = habitId ? completedDates(habitId).has(today) : false;
 
     return (
       <>
         <TodayToggle
           done={done}
+          color={habit?.color}
           onPress={() => {
             if (habitId) toggleCompletion(habitId, today);
           }}

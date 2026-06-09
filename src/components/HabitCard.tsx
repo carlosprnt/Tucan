@@ -58,7 +58,7 @@ export const HabitCard = observer(function HabitCard({
       onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}>
       <View style={styles.top}>
         <View style={styles.iconWrap}>
-          <HabitGlyph icon={habit.icon} size={22} color={theme.colors.ink} />
+          <HabitGlyph icon={habit.icon} size={22} color={habit.color ?? theme.colors.ink} />
         </View>
 
         <View style={styles.info}>
@@ -73,6 +73,7 @@ export const HabitCard = observer(function HabitCard({
 
         <TodayToggle
           done={done}
+          color={habit.color}
           onPress={() => toggleCompletion(habit.id, today)}
         />
       </View>
@@ -86,6 +87,7 @@ export const HabitCard = observer(function HabitCard({
             columns={columns}
             cellSize={CELL}
             gap={GAP}
+            color={habit.color}
           />
         )}
       </View>

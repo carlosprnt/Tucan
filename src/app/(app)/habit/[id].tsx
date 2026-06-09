@@ -66,7 +66,7 @@ const HabitDetail = observer(function HabitDetail() {
   const today = todayKey();
   const completed = completedDates(habit.id);
   const stats = statsForHabit(habit.id, habit.start_date, habit.active_days);
-  const accent = theme.colors.ink;
+  const accent = habit.color ?? theme.colors.ink;
   const months = monthsDescending(habit.start_date, today);
 
   return (
@@ -173,6 +173,7 @@ function MonthScroll({
                 completed={completed}
                 startDate={habit.start_date}
                 today={today}
+                color={habit.color}
                 activeDays={habit.active_days}
                 animate={false}
                 width={width || undefined}

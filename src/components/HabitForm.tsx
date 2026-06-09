@@ -23,6 +23,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { IconColorPickerModal } from '@/components/IconColorPickerModal';
 import { ALL_DAYS, fromDateKey, toDateKey, todayKey, type DateKey } from '@/lib/date';
+import { HABIT_COLORS } from '@/lib/colors';
 import { haptics } from '@/lib/haptics';
 import { requestNotificationPermission } from '@/lib/notifications';
 import {
@@ -33,6 +34,7 @@ import {
 } from '@/lib/icons';
 import {
   createHabit,
+  currentProfile,
   deleteHabit,
   getHabit,
   updateHabit,
@@ -51,10 +53,12 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
   const existing = habitId ? getHabit(habitId) : undefined;
   const isEdit = !!existing;
+  const isPremium = currentProfile()?.is_premium ?? false;
 
   const [name, setName] = useState(existing?.name ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [icon, setIcon] = useState<SFSymbol | string>(habitIcon(existing?.icon));
+  const [color, setColor] = useState<string | null>(existing?.color ?? null);
   const [startDate, setStartDate] = useState<DateKey>(existing?.start_date ?? todayKey());
   const [activeDays, setActiveDays] = useState(existing?.active_days ?? ALL_DAYS);
   const [reminderEnabled, setReminderEnabled] = useState(existing?.reminder_enabled ?? false);
@@ -108,12 +112,14 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     ? name.trim() !== existing.name ||
       (description.trim() || null) !== (existing.description ?? null) ||
       icon !== habitIcon(existing.icon) ||
+      color !== (existing.color ?? null) ||
       startDate !== existing.start_date ||
       activeDays !== existing.active_days ||
       reminderEnabled !== existing.reminder_enabled ||
       (reminderTime ?? null) !== (existing.reminder_time ?? null)
     : name.trim() !== '' ||
       description.trim() !== '' ||
+      color !== null ||
       icon !== habitIcon(undefined) ||
       reminderEnabled ||
       activeDays !== ALL_DAYS ||
@@ -191,7 +197,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     });
   }
 
-  const accent = theme.colors.ink;
+  const accent = color ?? theme.colors.ink;
   const canSave = name.trim().length > 0;
 
   // Quick-select row: the currently selected icon/emoji always sits first so
@@ -205,6 +211,19 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     haptics.selection();
     setName(s.name);
     setIcon(s.icon);
+  }
+
+  function onColorPress(value: string | null, premium: boolean) {
+    if (premium && !isPremium) {
+      haptics.warning();
+      Alert.alert('Unlock colors', 'Custom habit colors are part of Tucan Premium.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'See Premium', onPress: () => router.push('/settings') },
+      ]);
+      return;
+    }
+    haptics.selection();
+    setColor(value);
   }
 
   function onDateChange(_event: DateTimePickerEvent, date?: Date) {
@@ -239,7 +258,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
       name: name.trim(),
       description: description.trim() || null,
       icon,
-      color: null,
+      color,
       start_date: startDate,
       active_days: activeDays,
       reminder_enabled: reminderEnabled,
@@ -411,6 +430,39 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             style={({ pressed }) => [styles.viewMore, pressed && styles.pressed]}>
             <Text style={styles.viewMoreText}>View more</Text>
           </Pressable>
+        </Field>
+
+        {/* Color */}
+        <Field label="Color">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.colorRow}>
+            {HABIT_COLORS.map((opt) => {
+              const selected = opt.value === color;
+              const swatch = opt.value ?? theme.colors.ink;
+              const locked = opt.premium && !isPremium;
+              return (
+                <Pressable
+                  key={opt.label}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={locked ? `${opt.label} color (premium)` : `${opt.label} color`}
+                  accessibilityState={{ selected }}
+                  onPress={() => onColorPress(opt.value, opt.premium)}
+                  style={[styles.swatch, { backgroundColor: swatch }]}>
+                  {locked ? (
+                    <SymbolView name="lock.fill" size={12} tintColor={theme.colors.canvas} />
+                  ) : (
+                    selected && (
+                      <SymbolView name="checkmark" size={14} weight="bold" tintColor={theme.colors.canvas} />
+                    )
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </Field>
 
         {/* Start date */}
@@ -840,6 +892,23 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   iconEmoji: {
     fontSize: 26,
+  },
+  colorRow: {
+    flexDirection: 'row',
+    gap: theme.space.md,
+    paddingRight: theme.space.lg,
+  },
+  swatch: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  swatchSelected: {
+    borderColor: theme.colors.textPrimary,
   },
   dateButton: {
     flexDirection: 'row',

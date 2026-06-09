@@ -30,7 +30,7 @@ export const OverviewCard = observer(function OverviewCard({
       delayLongPress={220}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.head}>
-        <HabitGlyph icon={habit.icon} size={18} color={theme.colors.ink} />
+        <HabitGlyph icon={habit.icon} size={18} color={habit.color ?? theme.colors.ink} />
         <Text style={styles.name} numberOfLines={1}>
           {habit.name}
         </Text>
@@ -40,6 +40,7 @@ export const OverviewCard = observer(function OverviewCard({
         completed={completed}
         startDate={habit.start_date}
         today={today}
+        color={habit.color}
         activeDays={habit.active_days}
       />
     </Pressable>
