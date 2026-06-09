@@ -1,14 +1,16 @@
 import { observer } from '@legendapp/state/react';
 import { usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
+  Easing,
   FadeIn,
   FadeOut,
   LinearTransition,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
@@ -41,6 +43,20 @@ export const AppBar = observer(function AppBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, rt } = useUnistyles();
+
+  // Entrance: rise from below + fade in, fast then decelerating (ease-out),
+  // shortly after the screen appears. Plays once on mount.
+  const enter = useSharedValue(0);
+  useEffect(() => {
+    enter.value = withDelay(
+      350,
+      withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [enter]);
+  const enterStyle = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [{ translateY: (1 - enter.value) * 40 }],
+  }));
 
   // Over the create/edit sheet, keep the main bar mounted behind it so the
   // bottom nav stays visible as the sheet is swiped away (no flash/disappear).
@@ -117,9 +133,14 @@ export const AppBar = observer(function AppBar() {
   const overview = homeUI$.overview.get();
 
   return (
-    <View
+    <Animated.View
       pointerEvents="box-none"
-      style={[styles.wrap, styles.spread, { paddingBottom: rt.insets.bottom + theme.space.sm }]}>
+      style={[
+        styles.wrap,
+        styles.spread,
+        { paddingBottom: rt.insets.bottom + theme.space.sm },
+        enterStyle,
+      ]}>
       <RoundButton
         onPress={() => {
           haptics.selection();
@@ -151,7 +172,7 @@ export const AppBar = observer(function AppBar() {
           tintColor={overview ? theme.colors.ink : theme.colors.textSecondary}
         />
       </RoundButton>
-    </View>
+    </Animated.View>
   );
 });
 

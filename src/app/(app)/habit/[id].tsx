@@ -175,6 +175,7 @@ function MonthScroll({
 const CELL = 18;
 const GAP = 8;
 
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first
 const WEEKDAY_COUNT = 7;
 const SKELETON_DAYS = 32; // default placeholder days per month
 const CASCADE_STEP = 110; // ms between each row's blink (top → bottom)
@@ -241,6 +242,14 @@ function MonthSkeleton() {
   return (
     <View style={styles.monthBlock} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       <SkeletonLabel delay={0} />
+      {/* Fixed weekday header — matches the real calendar so there's no jump. */}
+      <View style={[styles.skeletonRow, { gap: GAP, marginBottom: GAP }]}>
+        {WEEKDAYS.map((w, i) => (
+          <View key={i} style={{ width: cellSize, alignItems: 'center' }}>
+            <Text style={styles.weekday}>{w}</Text>
+          </View>
+        ))}
+      </View>
       {width > 0 &&
         SKELETON_ROWS.map((cells, r) => (
           <SkeletonRow
@@ -419,10 +428,14 @@ const styles = StyleSheet.create((theme, rt) => ({
     width: 120,
     height: theme.font.heading,
     borderRadius: theme.radius.sm,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.dotMissed,
   },
   skeletonDot: {
     backgroundColor: theme.colors.dotMissed,
+  },
+  weekday: {
+    fontSize: theme.font.caption,
+    color: theme.colors.textMuted,
   },
   monthLabel: {
     fontSize: theme.font.heading,
