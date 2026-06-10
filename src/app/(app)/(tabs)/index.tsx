@@ -3,7 +3,7 @@ import '@/theme/unistyles';
 import { observer, use$ } from '@legendapp/state/react';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import DraggableFlatList, {
   ScaleDecorator,
@@ -12,8 +12,8 @@ import DraggableFlatList, {
 import Animated, {
   FadeIn,
   FadeInDown,
-  FadeOut,
   FadeOutUp,
+  runOnJS,
   useAnimatedProps,
   useSharedValue,
   withSequence,
@@ -37,9 +37,6 @@ import {
   type Habit,
 } from '@/store';
 
-const ENTER = FadeIn.duration(260);
-const EXIT = FadeOut.duration(140);
-
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const MAX_BLUR = 48;
 
@@ -48,12 +45,14 @@ const Home = observer(function Home() {
   const habits = listHabits();
   const hydrated = isStoreHydrated();
   const overview = use$(homeUI$.overview);
+  // What's actually rendered. It lags the toggle, swapping at the blur's peak.
+  const [displayed, setDisplayed] = useState(overview);
 
   // Today's progress: of the habits scheduled today, how many are checked.
   const todayLabel = todayProgressLabel(habits);
 
-  // Blur the whole content in then out over 1s when toggling list ↔ overview,
-  // masking the swap so the final view fades out of a soft blur.
+  // Toggle transition: blur the current view in (450ms), swap to the new view
+  // at the peak, then ease the blur back out (500ms) revealing it.
   const blur = useSharedValue(0);
   const firstRender = useRef(true);
   useEffect(() => {
@@ -61,9 +60,10 @@ const Home = observer(function Home() {
       firstRender.current = false;
       return;
     }
-    blur.value = 0;
     blur.value = withSequence(
-      withTiming(1, { duration: 500 }),
+      withTiming(1, { duration: 450 }, (finished) => {
+        if (finished) runOnJS(setDisplayed)(overview);
+      }),
       withTiming(0, { duration: 500 }),
     );
   }, [overview, blur]);
@@ -71,12 +71,8 @@ const Home = observer(function Home() {
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Habit>) => (
     <ScaleDecorator activeScale={1.03}>
-      <Animated.View
-        key={overview ? 'overview' : 'list'}
-        entering={ENTER}
-        exiting={EXIT}
-        style={styles.item}>
-        {overview ? (
+      <Animated.View key={displayed ? 'overview' : 'list'} style={styles.item}>
+        {displayed ? (
           <OverviewCard habit={item} onLongPress={drag} />
         ) : (
           <HabitCard habit={item} onLongPress={drag} dragging={isActive} />
@@ -97,7 +93,7 @@ const Home = observer(function Home() {
         containerStyle={styles.screen}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={<Header overview={overview} habits={habits} todayLabel={todayLabel} />}
+        ListHeaderComponent={<Header overview={displayed} habits={habits} todayLabel={todayLabel} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={hydrated ? <EmptyState /> : <SkeletonList />}
       />
