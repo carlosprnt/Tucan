@@ -33,7 +33,7 @@ export const completions$ = observable<Record<string, Completion>>(
 );
 
 function findCompletion(habitId: string, date: DateKey): Completion | undefined {
-  const all = completions$.peek();
+  const all = completions$.peek() ?? {};
   return (Object.values(all) as (Completion | undefined)[]).find(
     (c): c is Completion => !!c && c.habit_id === habitId && c.date === date,
   );
@@ -74,7 +74,7 @@ export function toggleCompletion(habitId: string, date: DateKey): void {
 
 /** Total completed days for a habit (the number that only ever goes up). */
 export function totalForHabit(habitId: string): number {
-  const all = completions$.get();
+  const all = completions$.get() ?? {};
   return (Object.values(all) as (Completion | undefined)[]).filter(
     (c) => !!c && c.habit_id === habitId && !c.deleted,
   ).length;
@@ -82,7 +82,7 @@ export function totalForHabit(habitId: string): number {
 
 /** Set of completed local-day keys for a habit (for rendering grids). */
 export function completedDates(habitId: string): Set<DateKey> {
-  const all = completions$.get();
+  const all = completions$.get() ?? {};
   const dates = new Set<DateKey>();
   for (const c of Object.values(all) as (Completion | undefined)[]) {
     if (c && c.habit_id === habitId && !c.deleted) dates.add(c.date);

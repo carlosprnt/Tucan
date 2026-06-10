@@ -24,7 +24,7 @@ export const habits$ = observable<Record<string, Habit>>(
 
 /** Visible habits: not deleted, not archived, ordered by sort_order. */
 export function listHabits(): Habit[] {
-  const all = habits$.get();
+  const all = habits$.get() ?? {};
   return (Object.values(all) as (Habit | undefined)[])
     .filter((h): h is Habit => !!h && !h.deleted && !h.archived_at)
     .sort(
