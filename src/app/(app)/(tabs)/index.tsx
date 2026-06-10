@@ -11,8 +11,6 @@ import DraggableFlatList, {
 } from 'react-native-draggable-flatlist';
 import Animated, {
   FadeIn,
-  FadeInDown,
-  FadeOutUp,
   runOnJS,
   useAnimatedProps,
   useSharedValue,
@@ -126,23 +124,12 @@ function Header({
       <View style={styles.titleRow}>
         <View style={styles.titleBlock}>
           <Text style={styles.title}>Your habits</Text>
-          {overview && (
-            <Animated.Text
-              entering={FadeInDown.duration(220)}
-              exiting={FadeOutUp.duration(140)}
-              style={styles.subtitle}>
-              Overview
-            </Animated.Text>
-          )}
+          {overview && <Text style={styles.subtitle}>Overview</Text>}
         </View>
         {todayLabel && <Text style={styles.todayProgress}>{todayLabel}</Text>}
       </View>
 
-      {overview && habits.length > 0 && (
-        <Animated.View entering={FadeInDown.duration(260)} exiting={FadeOutUp.duration(160)}>
-          <Summary habits={habits} />
-        </Animated.View>
-      )}
+      {overview && habits.length > 0 && <Summary habits={habits} />}
     </View>
   );
 }
