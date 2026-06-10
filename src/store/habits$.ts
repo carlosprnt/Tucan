@@ -29,7 +29,10 @@ export function listHabits(): Habit[] {
     .filter((h): h is Habit => !!h && !h.deleted && !h.archived_at)
     .sort(
       (a, b) =>
-        a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at),
+        a.sort_order - b.sort_order ||
+        // created_at may be briefly absent on a just-created row until the
+        // insert response merges the DB value back in.
+        (a.created_at ?? '').localeCompare(b.created_at ?? ''),
     );
 }
 
@@ -59,7 +62,12 @@ export function createHabit(input: NewHabitInput): string {
   const minSortOrder = existingHabits.length > 0
     ? Math.min(...existingHabits.map((h) => h.sort_order))
     : 0;
-  const row: Habit = {
+  // NOTE: `created_at` is intentionally omitted. The sync plugin uses the
+  // ABSENCE of created_at to tell a CREATE (insert) from an UPDATE (patch) —
+  // setting it here makes new rows patch a non-existent row and never persist.
+  // The database fills created_at via its default; the insert's response then
+  // merges the real value back into the store.
+  const row = {
     id,
     user_id: userId,
     name: input.name,
@@ -72,11 +80,10 @@ export function createHabit(input: NewHabitInput): string {
     reminder_time: input.reminder_time ?? null,
     sort_order: minSortOrder - 1,
     archived_at: null,
-    created_at: now,
     updated_at: now,
     deleted: false,
-  };
-  habits$[id].set(row);
+  } satisfies Omit<Habit, 'created_at'>;
+  habits$[id].set(row as Habit);
   return id;
 }
 

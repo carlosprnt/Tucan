@@ -12,6 +12,7 @@ import { auth$, endSession, initAuth } from './auth';
 import { completions$, type Completion } from './completions$';
 import { habits$, type Habit } from './habits$';
 import { profiles$, type Profile } from './profile$';
+import { homeUI$ } from './ui';
 
 export * from './auth';
 export * from './habits$';
@@ -26,6 +27,29 @@ export function initStore(): void {
     return;
   }
   initAuth();
+
+  // When a user signs in AFTER the app is already running (sign-out → sign-in,
+  // or switching account), force a fresh pull of every collection. Sign-out
+  // resets the local caches, which can leave the synced observables "loaded
+  // empty" so they don't re-fetch on their own. The very first session on cold
+  // start is skipped — the observables' natural lazy load already pulls it, and
+  // forcing here would double-fetch and make the home flicker on launch.
+  let lastUserId: string | null = null;
+  let sawInitialSession = false;
+  auth$.session.onChange(({ value }) => {
+    const uid = value?.user?.id ?? null;
+    if (!sawInitialSession) {
+      sawInitialSession = true;
+      lastUserId = uid;
+      return;
+    }
+    if (uid && uid !== lastUserId) {
+      void syncState(habits$).sync();
+      void syncState(completions$).sync();
+      void syncState(profiles$).sync();
+    }
+    lastUserId = uid;
+  });
 }
 
 /** True once the local (MMKV) caches have hydrated — gate empty states on this. */
@@ -35,6 +59,18 @@ export function isStoreHydrated(): boolean {
     syncState(habits$).isPersistLoaded.get() &&
     syncState(completions$).isPersistLoaded.get()
   );
+}
+
+/**
+ * True once we can trust the habit list is complete: the local cache has loaded
+ * AND the first remote pull has resolved. After a fresh login the cache is empty
+ * but the server may have habits, so we keep showing the skeleton (not the empty
+ * state) until the pull lands. Read inside an `observer` so it stays reactive.
+ */
+export function isHabitsReady(): boolean {
+  if (PREVIEW) return true;
+  const s = syncState(habits$);
+  return s.isPersistLoaded.get() && s.isLoaded.get();
 }
 
 /** Surfaces the first sync error across the core collections, if any. */
@@ -51,6 +87,8 @@ export function storeSyncError(): Error | undefined {
  */
 export async function signOut(): Promise<void> {
   if (PREVIEW) return; // no real session in preview
+  homeUI$.booted.set(false); // replay the skeleton + bar entrance on next login
+  homeUI$.overview.set(false);
   await endSession();
   await Promise.all([
     syncState(habits$).reset(),

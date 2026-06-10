@@ -16,9 +16,14 @@ export const detailUI$ = observable<{
 });
 
 /**
- * Home screen view state, shared with the global app bar so its right-hand
- * button can toggle between the list and the overview.
+ * Home screen view state, shared with the global app bar.
+ * - `overview`: the right-hand bar button toggles list ↔ overview.
+ * - `booted`: false until the dashboard has shown its first-entry skeleton and
+ *   revealed real content. Drives the skeleton AND the bar's entrance from one
+ *   narrow boolean, so the bar never re-renders on habit/sync changes. Reset to
+ *   false on sign-out so the next login replays the skeleton + entrance.
  */
-export const homeUI$ = observable<{ overview: boolean }>({
+export const homeUI$ = observable<{ overview: boolean; booted: boolean }>({
   overview: false,
+  booted: false,
 });

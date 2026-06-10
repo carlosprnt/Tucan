@@ -60,16 +60,17 @@ export function toggleCompletion(habitId: string, date: DateKey): void {
   }
   const id = uuidv4();
   const now = new Date().toISOString();
-  const row: Completion = {
+  // `created_at` is intentionally omitted — see the note in habits$.createHabit:
+  // the sync plugin uses its absence to detect a CREATE vs an UPDATE.
+  const row = {
     id,
     habit_id: habitId,
     user_id: userId,
     date,
-    created_at: now,
     updated_at: now,
     deleted: false,
-  };
-  completions$[id].set(row);
+  } satisfies Omit<Completion, 'created_at'>;
+  completions$[id].set(row as Completion);
 }
 
 /** Total completed days for a habit (the number that only ever goes up). */

@@ -4,22 +4,16 @@ import { observer, use$ } from '@legendapp/state/react';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Animated as RNAnimated, Pressable, Text, View } from 'react-native';
 import DraggableFlatList, {
   ScaleDecorator,
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
-import Animated, {
-  FadeIn,
-  runOnJS,
-  useAnimatedProps,
-  useSharedValue,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitCard } from '@/components/HabitCard';
+import { ChipSkeleton, HabitCardSkeleton } from '@/components/HabitCardSkeleton';
 import { OverviewCard } from '@/components/OverviewCard';
 import { TopFade } from '@/components/TopFade';
 import { daysBetween, isActiveDay, todayKey } from '@/lib/date';
@@ -27,7 +21,7 @@ import { haptics } from '@/lib/haptics';
 import {
   completedDates,
   homeUI$,
-  isStoreHydrated,
+  isHabitsReady,
   listHabits,
   reorderHabits,
   statsForHabit,
@@ -35,37 +29,66 @@ import {
   type Habit,
 } from '@/store';
 
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+// Driven by React Native's Animated (NOT Reanimated): animating the native
+// `intensity` prop through Reanimated's worklet commit path segfaults on Fabric
+// (cloneShadowTreeWithNewProps → folly::dynamic). RN's Animated uses a separate
+// prop-update path and is the supported way to animate blur intensity.
+const AnimatedBlurView = RNAnimated.createAnimatedComponent(BlurView);
 const MAX_BLUR = 48;
+// Minimum time the first-entry skeleton stays up, so it's always perceptible
+// even when the local (synchronous MMKV) cache resolves instantly.
+const BOOT_MIN_MS = 650;
 
 const Home = observer(function Home() {
   const { rt } = useUnistyles();
   const habits = listHabits();
-  const hydrated = isStoreHydrated();
+  const ready = isHabitsReady();
+  // Data is "resolved" once we have habits OR the first remote pull finished.
+  const dataPending = !ready && habits.length === 0;
+  // Single boot gate: drives the first-entry skeleton AND the bar's entrance.
+  const booted = use$(homeUI$.booted);
   const overview = use$(homeUI$.overview);
   // What's actually rendered. It lags the toggle, swapping at the blur's peak.
   const [displayed, setDisplayed] = useState(overview);
+
+  // Boot: reveal real content once the data has resolved AND the skeleton has
+  // shown for at least BOOT_MIN_MS. Flipping `booted` swaps the skeleton for the
+  // list and triggers the bottom bar's entrance.
+  const bootStartedAt = useRef(Date.now());
+  useEffect(() => {
+    if (booted || dataPending) return;
+    const remaining = Math.max(0, BOOT_MIN_MS - (Date.now() - bootStartedAt.current));
+    const t = setTimeout(() => homeUI$.booted.set(true), remaining);
+    return () => clearTimeout(t);
+  }, [booted, dataPending]);
 
   // Today's progress: of the habits scheduled today, how many are checked.
   const todayLabel = todayProgressLabel(habits);
 
   // Toggle transition: blur the current view in (450ms), swap to the new view
   // at the peak, then ease the blur back out (500ms) revealing it.
-  const blur = useSharedValue(0);
+  const intensity = useRef(new RNAnimated.Value(0)).current;
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    blur.value = withSequence(
-      withTiming(1, { duration: 450 }, (finished) => {
-        if (finished) runOnJS(setDisplayed)(overview);
-      }),
-      withTiming(0, { duration: 500 }),
-    );
-  }, [overview, blur]);
-  const blurProps = useAnimatedProps(() => ({ intensity: blur.value * MAX_BLUR }));
+    intensity.stopAnimation();
+    RNAnimated.timing(intensity, {
+      toValue: MAX_BLUR,
+      duration: 450,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (!finished) return; // superseded by a faster re-toggle
+      setDisplayed(overview); // swap content while it's hidden behind the blur
+      RNAnimated.timing(intensity, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: false,
+      }).start();
+    });
+  }, [overview, intensity]);
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Habit>) => (
     <ScaleDecorator activeScale={1.03}>
@@ -81,27 +104,43 @@ const Home = observer(function Home() {
 
   return (
     <View style={styles.screen}>
-      <DraggableFlatList
-        data={habits}
-        keyExtractor={(h) => h.id}
-        renderItem={renderItem}
-        onDragBegin={() => haptics.medium()}
-        onDragEnd={({ data }) => reorderHabits(data.map((h) => h.id))}
-        activationDistance={12}
-        containerStyle={styles.screen}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={<Header overview={displayed} habits={habits} todayLabel={todayLabel} />}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={hydrated ? <EmptyState /> : <SkeletonList />}
-      />
+      {booted && (
+        <DraggableFlatList
+          data={habits}
+          keyExtractor={(h) => h.id}
+          renderItem={renderItem}
+          onDragBegin={() => haptics.medium()}
+          onDragEnd={({ data }) => reorderHabits(data.map((h) => h.id))}
+          activationDistance={12}
+          containerStyle={styles.screen}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <Header overview={displayed} habits={habits} todayLabel={todayLabel} loading={false} />
+          }
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListEmptyComponent={<EmptyState />}
+        />
+      )}
+
+      {/* First-entry skeleton overlay: fixed "Your habits" title + chip skeleton
+          + cards. When booted flips, it fades to 0 over the real content. */}
+      {!booted && (
+        <Animated.View
+          pointerEvents="none"
+          exiting={FadeOut.duration(280)}
+          style={styles.skeletonOverlay}>
+          <Header overview={false} habits={[]} todayLabel={null} loading />
+          <SkeletonList />
+        </Animated.View>
+      )}
 
       <TopFade height={rt.insets.top + 28} />
 
       <AnimatedBlurView
         pointerEvents="none"
         tint={rt.themeName === 'dark' ? 'dark' : 'light'}
-        animatedProps={blurProps}
+        intensity={intensity}
         style={styles.blurOverlay}
       />
     </View>
@@ -114,10 +153,12 @@ function Header({
   overview,
   habits,
   todayLabel,
+  loading,
 }: {
   overview: boolean;
   habits: Habit[];
   todayLabel: string | null;
+  loading: boolean;
 }) {
   return (
     <View style={styles.header}>
@@ -126,7 +167,11 @@ function Header({
           <Text style={styles.title}>Your habits</Text>
           {overview && <Text style={styles.subtitle}>Overview</Text>}
         </View>
-        {todayLabel && <Text style={styles.todayProgress}>{todayLabel}</Text>}
+        {loading ? (
+          <ChipSkeleton />
+        ) : todayLabel ? (
+          <Text style={styles.todayProgress}>{todayLabel}</Text>
+        ) : null}
       </View>
 
       {overview && habits.length > 0 && <Summary habits={habits} />}
@@ -176,7 +221,7 @@ function SkeletonList() {
   return (
     <View style={styles.skeletonList}>
       {[0, 1, 2].map((i) => (
-        <View key={i} style={styles.skeletonCard} />
+        <HabitCardSkeleton key={i} delay={i * 120} />
       ))}
     </View>
   );
@@ -282,14 +327,17 @@ const styles = StyleSheet.create((theme, rt) => ({
   separator: {
     height: theme.space.md,
   },
+  skeletonOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: theme.space.lg,
+    paddingTop: rt.insets.top + theme.space.lg,
+  },
   skeletonList: {
     gap: theme.space.md,
-  },
-  skeletonCard: {
-    height: 132,
-    borderRadius: theme.radius.xl,
-    backgroundColor: theme.colors.card,
-    opacity: 0.6,
   },
   empty: {
     flex: 1,

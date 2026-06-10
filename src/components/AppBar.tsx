@@ -1,4 +1,4 @@
-import { observer } from '@legendapp/state/react';
+import { use$ } from '@legendapp/state/react';
 import { usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, type ReactNode } from 'react';
@@ -29,7 +29,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
  * mounted behind modals (create, settings, habit detail) so the bottom nav is
  * present as they're dismissed.
  */
-export const AppBar = observer(function AppBar() {
+export function AppBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, rt } = useUnistyles();
@@ -37,18 +37,23 @@ export const AppBar = observer(function AppBar() {
   const isHome = pathname === '/';
 
   // Entrance: rise from below + fade in, fast then decelerating (ease-out).
-  // Plays once, the first time home appears. It must NOT replay when a modal
-  // (detail/settings/create) closes — the bar was there behind it all along.
+  // Plays once, the first time home appears AND the dashboard skeleton has
+  // cleared (`booted`) — so on a cold/login load the bar stays hidden behind the
+  // skeleton and only rises in once content is ready. It must NOT replay when a
+  // modal closes — the bar was there behind it all along. Reading the single
+  // `booted` boolean (not the habit list) keeps the bar from re-rendering on
+  // habit/sync changes, which is what made the icons flicker.
+  const booted = use$(homeUI$.booted);
   const enter = useSharedValue(0);
   const entered = useRef(false);
   useEffect(() => {
-    if (!isHome || entered.current) return;
+    if (!isHome || !booted || entered.current) return;
     entered.current = true;
     enter.value = withDelay(
       120,
       withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) }),
     );
-  }, [isHome, enter]);
+  }, [isHome, booted, enter]);
   const enterStyle = useAnimatedStyle(() => ({
     opacity: enter.value,
     transform: [{ translateY: (1 - enter.value) * 40 }],
@@ -56,7 +61,7 @@ export const AppBar = observer(function AppBar() {
 
   // Three buttons spread across the bottom —
   // left Settings (opens the modal) · center Create · right view-change.
-  const overview = homeUI$.overview.get();
+  const overview = use$(homeUI$.overview);
 
   return (
     <Animated.View
@@ -65,6 +70,11 @@ export const AppBar = observer(function AppBar() {
         styles.wrap,
         styles.spread,
         { paddingBottom: rt.insets.bottom + theme.space.sm },
+        // Frame-0 hidden state matching enter=0, so the bar never flashes at its
+        // final position for a frame before the animated entrance style commits
+        // (very visible in dark mode against the near-black canvas). `enterStyle`
+        // overrides this on every committed frame.
+        styles.hiddenInit,
         enterStyle,
       ]}>
       <RoundButton
@@ -100,7 +110,7 @@ export const AppBar = observer(function AppBar() {
       </RoundButton>
     </Animated.View>
   );
-});
+}
 
 function RoundButton({
   onPress,
@@ -169,6 +179,10 @@ const styles = StyleSheet.create((theme, rt) => ({
     right: 0,
     bottom: 0,
     alignItems: 'center',
+  },
+  hiddenInit: {
+    opacity: 0,
+    transform: [{ translateY: 40 }],
   },
   spread: {
     flexDirection: 'row',
