@@ -1,13 +1,24 @@
 import '@/theme/unistyles';
 
 import { observer, use$ } from '@legendapp/state/react';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import DraggableFlatList, {
   ScaleDecorator,
   type RenderItemParams,
 } from 'react-native-draggable-flatlist';
-import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutUp } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutUp,
+  useAnimatedProps,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitCard } from '@/components/HabitCard';
@@ -29,6 +40,9 @@ import {
 const ENTER = FadeIn.duration(260);
 const EXIT = FadeOut.duration(140);
 
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const MAX_BLUR = 48;
+
 const Home = observer(function Home() {
   const { rt } = useUnistyles();
   const habits = listHabits();
@@ -37,6 +51,23 @@ const Home = observer(function Home() {
 
   // Today's progress: of the habits scheduled today, how many are checked.
   const todayLabel = todayProgressLabel(habits);
+
+  // Blur the whole content in then out over 1s when toggling list ↔ overview,
+  // masking the swap so the final view fades out of a soft blur.
+  const blur = useSharedValue(0);
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    blur.value = 0;
+    blur.value = withSequence(
+      withTiming(1, { duration: 500 }),
+      withTiming(0, { duration: 500 }),
+    );
+  }, [overview, blur]);
+  const blurProps = useAnimatedProps(() => ({ intensity: blur.value * MAX_BLUR }));
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Habit>) => (
     <ScaleDecorator activeScale={1.03}>
@@ -72,6 +103,13 @@ const Home = observer(function Home() {
       />
 
       <TopFade height={rt.insets.top + 28} />
+
+      <AnimatedBlurView
+        pointerEvents="none"
+        tint={rt.themeName === 'dark' ? 'dark' : 'light'}
+        animatedProps={blurProps}
+        style={styles.blurOverlay}
+      />
     </View>
   );
 });
@@ -187,6 +225,13 @@ const styles = StyleSheet.create((theme, rt) => ({
   screen: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
+  },
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   content: {
     paddingHorizontal: theme.space.lg,
