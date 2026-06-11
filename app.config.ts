@@ -11,11 +11,10 @@ const config: ExpoConfig = {
   owner: 'carlosprnt',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/icon.png',
+  icon: './assets/images/icon-tucan.png',
   scheme: 'tucan',
   userInterfaceStyle: 'automatic',
   ios: {
-    icon: './assets/expo.icon',
     bundleIdentifier: 'com.carlosprnt.tucan',
     supportsTablet: false,
   },

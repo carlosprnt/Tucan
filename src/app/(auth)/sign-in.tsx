@@ -31,7 +31,7 @@ export default function SignIn() {
       await fn();
     } catch (e) {
       // Log the real error; show the user something friendly.
-      console.warn('Sign-in error', e);
+      console.warn('Sign-in error', provider, e);
       Alert.alert('Couldn’t sign you in', 'Something went wrong. Please try again.');
     } finally {
       setBusy(null);
