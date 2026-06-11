@@ -6,7 +6,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { HabitGlyph } from '@/components/HabitGlyph';
 import { YearHeatmap } from '@/components/YearHeatmap';
 import { scheduleLabel, todayKey } from '@/lib/date';
-import { completedDates, type Habit } from '@/store';
+import { completedDates, statsForHabit, type Habit } from '@/store';
 
 /** Overview row: icon + name + total + the habit's year heatmap. Tap to open detail. */
 export const OverviewCard = observer(function OverviewCard({
@@ -20,11 +20,13 @@ export const OverviewCard = observer(function OverviewCard({
   const router = useRouter();
   const today = todayKey();
   const completed = completedDates(habit.id);
+  // done days / active days elapsed — e.g. 5/50 (denominator in gray).
+  const { total, days } = statsForHabit(habit.id, habit.start_date, habit.active_days);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${habit.name}, ${completed.size} days completed`}
+      accessibilityLabel={`${habit.name}, ${total} of ${days} days completed`}
       onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}
       onLongPress={onLongPress}
       delayLongPress={220}
@@ -39,7 +41,10 @@ export const OverviewCard = observer(function OverviewCard({
             {scheduleLabel(habit.active_days)}
           </Text>
         </View>
-        <Text style={styles.total}>{completed.size}</Text>
+        <Text style={styles.total}>
+          {total}
+          <Text style={styles.totalDenom}>/{days}</Text>
+        </Text>
       </View>
       <YearHeatmap
         completed={completed}
@@ -84,5 +89,9 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.font.heading,
     fontWeight: theme.weight.bold,
     color: theme.colors.textPrimary,
+  },
+  totalDenom: {
+    fontWeight: theme.weight.medium,
+    color: theme.colors.textSecondary,
   },
 }));

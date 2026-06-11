@@ -7,6 +7,7 @@ import type { Session } from '@supabase/supabase-js';
 import { addDays, todayKey } from '@/lib/date';
 import { uuidv4 } from '@/lib/id';
 import { PREVIEW, PREVIEW_USER_ID } from '@/lib/preview';
+import { supabase } from '@/lib/supabase';
 
 import { auth$, endSession, initAuth } from './auth';
 import { completions$, type Completion } from './completions$';
@@ -19,6 +20,7 @@ export * from './auth';
 export * from './demo';
 export * from './habits$';
 export * from './completions$';
+export * from './insights';
 export * from './profile$';
 export * from './ui';
 
@@ -99,6 +101,18 @@ export async function signOut(): Promise<void> {
     syncState(completions$).reset(),
     syncState(profiles$).reset(),
   ]);
+}
+
+/**
+ * Permanently delete the account and ALL its data. The `delete_account` RPC
+ * removes the auth user; every table cascades from it. Then we clear the local
+ * session/caches like a sign-out.
+ */
+export async function deleteAccount(): Promise<void> {
+  if (PREVIEW) return;
+  const { error } = await supabase.rpc('delete_account');
+  if (error) throw error;
+  await signOut();
 }
 
 // ---------------------------------------------------------------------------

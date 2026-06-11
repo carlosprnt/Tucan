@@ -7,7 +7,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { HabitGlyph } from '@/components/HabitGlyph';
 import { todayKey } from '@/lib/date';
 import { buildRecentStates } from '@/lib/grid';
-import { completedDates, toggleCompletion, type Habit } from '@/store';
+import { completedDates, statsForHabit, toggleCompletion, type Habit } from '@/store';
 
 import { DottedSeparator } from './DottedSeparator';
 import { DotGrid } from './DotGrid';
@@ -32,7 +32,8 @@ export const HabitCard = observer(function HabitCard({
 
   const today = todayKey();
   const completed = completedDates(habit.id);
-  const total = completed.size; // a completion is one row per day, so size == total
+  // done days / active days elapsed — e.g. 1/1 (denominator + "days" in gray).
+  const { total, days } = statsForHabit(habit.id, habit.start_date, habit.active_days);
   const done = completed.has(today);
 
   const columns =
@@ -66,7 +67,11 @@ export const HabitCard = observer(function HabitCard({
             {habit.name}
           </Text>
           <View style={styles.totalRow}>
-            <Text style={styles.total}>{total}</Text>
+            <View style={styles.fraction}>
+              <Text style={styles.total}>{total}</Text>
+              <View style={styles.dot} />
+              <Text style={styles.totalDenom}>{days}</Text>
+            </View>
             <Text style={styles.totalLabel}>days</Text>
           </View>
         </View>
@@ -107,7 +112,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   top: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: theme.space.md,
   },
   iconWrap: {
@@ -132,11 +137,32 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'baseline',
     gap: theme.space.xs,
   },
+  fraction: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3.5,
+  },
+  // Separator dot between done / total — medium, gray, vertically centered.
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: theme.colors.textSecondary,
+    alignSelf: 'center',
+  },
   total: {
-    fontSize: theme.font.title,
+    fontSize: theme.font.title - 5,
     fontWeight: theme.weight.heavy,
     letterSpacing: -0.5,
     color: theme.colors.textPrimary,
+  },
+  // Identical metrics to `total` (only the color differs) so "1/1" reads as one
+  // uniform block and the slash stays inline instead of dropping below.
+  totalDenom: {
+    fontSize: theme.font.title - 5,
+    fontWeight: theme.weight.heavy,
+    letterSpacing: -0.5,
+    color: theme.colors.textSecondary,
   },
   totalLabel: {
     fontSize: theme.font.caption,

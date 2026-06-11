@@ -20,11 +20,14 @@ import { daysBetween, isActiveDay, todayKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import {
   completedDates,
+  doneThisMonth,
   homeUI$,
   isHabitsReady,
   listHabits,
+  mostConsistentHabit,
   reorderHabits,
   statsForHabit,
+  strongestWeekday,
   totalForHabit,
   type Habit,
 } from '@/store';
@@ -164,8 +167,7 @@ function Header({
     <View style={styles.header}>
       <View style={styles.titleRow}>
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>Your habits</Text>
-          {overview && <Text style={styles.subtitle}>Overview</Text>}
+          <Text style={styles.title}>{overview ? 'Overview' : 'Your habits'}</Text>
         </View>
         {loading ? (
           <ChipSkeleton />
@@ -187,20 +189,30 @@ const Summary = observer(function Summary({ habits }: { habits: Habit[] }) {
           habits.length,
       )
     : 0;
+  const thisMonth = doneThisMonth();
+  const strongest = strongestWeekday();
+  const steadiest = mostConsistentHabit();
 
   return (
-    <View style={styles.summary}>
-      <Stat value={String(totalAll)} label="completions" />
-      <Stat value={`${avgPercent}%`} label="avg. completion" />
+    <View style={styles.insights}>
+      <InsightRow label="Completed this month" value={String(thisMonth)} />
+      <InsightRow label="Completed all-time" value={String(totalAll)} />
+      <InsightRow label="Consistency" value={`${avgPercent}%`} />
+      {strongest && <InsightRow label="Strongest day" value={strongest} />}
+      {steadiest && (
+        <InsightRow label="Most consistent" value={`${steadiest.name} · ${steadiest.percent}%`} />
+      )}
     </View>
   );
 });
 
-function Stat({ value, label }: { value: string; label: string }) {
+function InsightRow({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={styles.insightRow}>
+      <Text style={styles.insightLabel}>{label}</Text>
+      <Text style={styles.insightValue} numberOfLines={1}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -297,29 +309,26 @@ const styles = StyleSheet.create((theme, rt) => ({
     letterSpacing: -0.5,
     color: theme.colors.textPrimary,
   },
-  subtitle: {
-    marginTop: 2,
-    fontSize: theme.font.body,
-    fontWeight: theme.weight.medium,
-    color: theme.colors.textSecondary,
-  },
-  summary: {
-    flexDirection: 'row',
-    gap: theme.space.xxxl,
+  insights: {
+    gap: theme.space.sm,
     paddingBottom: theme.space.xs,
   },
-  stat: {
-    gap: 2,
+  insightRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: theme.space.md,
   },
-  statValue: {
-    fontSize: theme.font.display,
-    fontWeight: theme.weight.heavy,
-    letterSpacing: -1,
-    color: theme.colors.textPrimary,
-  },
-  statLabel: {
+  insightLabel: {
     fontSize: theme.font.caption,
     color: theme.colors.textSecondary,
+  },
+  insightValue: {
+    fontSize: theme.font.caption,
+    fontWeight: theme.weight.medium,
+    color: theme.colors.textPrimary,
+    flexShrink: 1,
+    textAlign: 'right',
   },
   item: {
     width: '100%',

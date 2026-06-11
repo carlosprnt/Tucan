@@ -17,6 +17,7 @@ import { applyThemePref } from '@/lib/theme-control';
 import {
   auth$,
   currentProfile,
+  deleteAccount,
   DEMO_PRESETS,
   demoMode$,
   enterDemo,
@@ -96,6 +97,26 @@ const Settings = observer(function Settings() {
     ]);
   }
 
+  function confirmDeleteAccount() {
+    haptics.warning();
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your account and all your habits and history from the server. This can’t be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            void deleteAccount().catch(() => {
+              Alert.alert('Couldn’t delete account', 'Something went wrong. Please try again.');
+            });
+          },
+        },
+      ],
+    );
+  }
+
   function onTimeChange(_e: DateTimePickerEvent, date?: Date) {
     if (Platform.OS !== 'ios') setShowTimePicker(false);
     if (date) updateProfile({ reminder_time: dateToTime(date) });
@@ -168,7 +189,7 @@ const Settings = observer(function Settings() {
             )}
           </>
         )}
-        <Text style={styles.note}>
+        <Text style={[styles.note, styles.reminderNote]}>
           We&apos;ll nudge you once a day at this time. Requires notification access.
         </Text>
       </Section>
@@ -264,6 +285,14 @@ const Settings = observer(function Settings() {
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>
       </Section>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Delete account"
+        style={({ pressed }) => [styles.deleteAccount, pressed && styles.pressed]}
+        onPress={confirmDeleteAccount}>
+        <Text style={styles.deleteAccountText}>Delete account</Text>
+      </Pressable>
     </ScrollView>
   );
 });
@@ -389,6 +418,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textMuted,
     marginTop: theme.space.xs,
   },
+  // Pull the reminder note up so it hugs the control like Premium's note does
+  // (the section gap would otherwise add too much space above it).
+  reminderNote: {
+    marginTop: -2,
+  },
   premiumText: {
     flex: 1,
     gap: 2,
@@ -401,6 +435,15 @@ const styles = StyleSheet.create((theme, rt) => ({
   signOutText: {
     fontSize: theme.font.body,
     fontWeight: theme.weight.semibold,
+    color: theme.colors.accent,
+  },
+  deleteAccount: {
+    alignItems: 'center',
+    paddingVertical: theme.space.md,
+  },
+  deleteAccountText: {
+    fontSize: theme.font.caption,
+    fontWeight: theme.weight.medium,
     color: theme.colors.accent,
   },
   pressed: {
