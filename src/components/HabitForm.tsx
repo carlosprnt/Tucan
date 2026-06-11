@@ -34,9 +34,9 @@ import {
 } from '@/lib/icons';
 import {
   createHabit,
-  currentProfile,
   deleteHabit,
   getHabit,
+  isPremium,
   updateHabit,
 } from '@/store';
 
@@ -53,7 +53,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
   const existing = habitId ? getHabit(habitId) : undefined;
   const isEdit = !!existing;
-  const isPremium = currentProfile()?.is_premium ?? false;
+  const hasPro = isPremium();
 
   const [name, setName] = useState(existing?.name ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
@@ -214,7 +214,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
   }
 
   function onColorPress(value: string | null, premium: boolean) {
-    if (premium && !isPremium) {
+    if (premium && !hasPro) {
       haptics.warning();
       Alert.alert('Unlock colors', 'Custom habit colors are part of Tucan Premium.', [
         { text: 'Not now', style: 'cancel' },
@@ -442,7 +442,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             {HABIT_COLORS.map((opt) => {
               const selected = opt.value === color;
               const swatch = opt.value ?? theme.colors.ink;
-              const locked = opt.premium && !isPremium;
+              const locked = opt.premium && !hasPro;
               return (
                 <Pressable
                   key={opt.label}

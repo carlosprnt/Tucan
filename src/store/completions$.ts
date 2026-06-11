@@ -1,4 +1,4 @@
-import { observable } from '@legendapp/state';
+import { observable, type Observable } from '@legendapp/state';
 
 import {
   addDays,
@@ -13,9 +13,15 @@ import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
 
 import { getUserId } from './auth';
+import { demoCompletions$, inDemo } from './demo';
 import { customSynced } from './sync';
 
 export type Completion = Tables<'completions'>;
+
+/** The observable backing completions: the demo overlay or the synced store. */
+function completionsRoot(): Observable<Record<string, Completion>> {
+  return (inDemo() ? demoCompletions$ : completions$) as Observable<Record<string, Completion>>;
+}
 
 /**
  * All completion rows for the signed-in user, keyed by id.
@@ -33,7 +39,7 @@ export const completions$ = observable<Record<string, Completion>>(
 );
 
 function findCompletion(habitId: string, date: DateKey): Completion | undefined {
-  const all = completions$.peek() ?? {};
+  const all = completionsRoot().peek() ?? {};
   return (Object.values(all) as (Completion | undefined)[]).find(
     (c): c is Completion => !!c && c.habit_id === habitId && c.date === date,
   );
@@ -50,18 +56,21 @@ export function isDone(habitId: string, date: DateKey): boolean {
  * violate the unique(habit_id, date) constraint); a fresh mark inserts a row.
  */
 export function toggleCompletion(habitId: string, date: DateKey): void {
-  const userId = getUserId();
+  const demo = inDemo();
+  const userId = getUserId() ?? (demo ? 'demo-user' : null);
   if (!userId) return; // no session — never throw from a press handler
+  const root = completionsRoot();
   const existing = findCompletion(habitId, date);
   if (existing) {
-    completions$[existing.id].deleted.set(!existing.deleted);
-    completions$[existing.id].updated_at.set(new Date().toISOString());
+    (root[existing.id] as Observable<Completion>).deleted.set(!existing.deleted);
+    (root[existing.id] as Observable<Completion>).updated_at.set(new Date().toISOString());
     return;
   }
   const id = uuidv4();
   const now = new Date().toISOString();
-  // `created_at` is intentionally omitted — see the note in habits$.createHabit:
-  // the sync plugin uses its absence to detect a CREATE vs an UPDATE.
+  // `created_at` is intentionally omitted for the SYNCED store — the plugin uses
+  // its absence to detect a CREATE vs an UPDATE. Demo rows are local-only, so
+  // they set it directly.
   const row = {
     id,
     habit_id: habitId,
@@ -70,12 +79,12 @@ export function toggleCompletion(habitId: string, date: DateKey): void {
     updated_at: now,
     deleted: false,
   } satisfies Omit<Completion, 'created_at'>;
-  completions$[id].set(row as Completion);
+  root[id].set((demo ? { ...row, created_at: now } : row) as Completion);
 }
 
 /** Total completed days for a habit (the number that only ever goes up). */
 export function totalForHabit(habitId: string): number {
-  const all = completions$.get() ?? {};
+  const all = completionsRoot().get() ?? {};
   return (Object.values(all) as (Completion | undefined)[]).filter(
     (c) => !!c && c.habit_id === habitId && !c.deleted,
   ).length;
@@ -83,7 +92,7 @@ export function totalForHabit(habitId: string): number {
 
 /** Set of completed local-day keys for a habit (for rendering grids). */
 export function completedDates(habitId: string): Set<DateKey> {
-  const all = completions$.get() ?? {};
+  const all = completionsRoot().get() ?? {};
   const dates = new Set<DateKey>();
   for (const c of Object.values(all) as (Completion | undefined)[]) {
     if (c && c.habit_id === habitId && !c.deleted) dates.add(c.date);

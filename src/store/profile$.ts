@@ -4,6 +4,7 @@ import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
 
 import { getUserId } from './auth';
+import { admin$ } from './demo';
 import { customSynced } from './sync';
 
 export type Profile = Tables<'profiles'>;
@@ -24,6 +25,16 @@ export const profiles$ = observable<Record<string, Profile>>(
 export function currentProfile(): Profile | undefined {
   const id = getUserId();
   return id ? profiles$[id].get() : undefined;
+}
+
+/**
+ * Whether Pro features are unlocked. Respects the admin's local Pro override
+ * (for previewing Pro before the paywall exists); otherwise the real profile.
+ */
+export function isPremium(): boolean {
+  const override = admin$.proOverride.get();
+  if (override != null) return override;
+  return currentProfile()?.is_premium ?? false;
 }
 
 export type ProfilePatch = Partial<

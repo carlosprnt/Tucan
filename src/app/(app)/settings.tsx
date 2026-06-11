@@ -17,6 +17,13 @@ import { applyThemePref } from '@/lib/theme-control';
 import {
   auth$,
   currentProfile,
+  DEMO_PRESETS,
+  demoMode$,
+  enterDemo,
+  exitDemo,
+  isAdmin,
+  isPremium,
+  setProOverride,
   signOut,
   updateProfile,
   type ThemePref,
@@ -33,9 +40,28 @@ const Settings = observer(function Settings() {
   const themePref = profile?.theme_pref ?? 'auto';
   const reminderEnabled = profile?.reminder_enabled ?? false;
   const reminderTime = profile?.reminder_time ?? null;
-  const isPremium = profile?.is_premium ?? false;
+  const premium = isPremium();
+  const admin = isAdmin();
+  const demoPreset = use$(demoMode$.preset);
 
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  function onTogglePro(value: boolean) {
+    haptics.light();
+    setProOverride(value);
+  }
+
+  function onEnterDemo(presetId: string) {
+    haptics.selection();
+    enterDemo(presetId);
+    router.back(); // close settings so the demo dashboard is visible
+  }
+
+  function onExitDemo() {
+    haptics.selection();
+    exitDemo();
+    router.back();
+  }
 
   function onSelectTheme(pref: ThemePref) {
     haptics.selection();
@@ -149,7 +175,19 @@ const Settings = observer(function Settings() {
 
       {/* Premium */}
       <Section label="Premium">
-        {isPremium ? (
+        {admin ? (
+          <View style={styles.row}>
+            <View style={styles.premiumText}>
+              <Text style={styles.rowLabel}>Pro features</Text>
+              <Text style={styles.note}>Admin override — preview Pro before the paywall.</Text>
+            </View>
+            <Switch
+              value={premium}
+              onValueChange={onTogglePro}
+              trackColor={{ true: theme.colors.ink, false: theme.colors.separator }}
+            />
+          </View>
+        ) : premium ? (
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Custom habit colors</Text>
             <Text style={styles.rowValue}>Active</Text>
@@ -171,6 +209,43 @@ const Settings = observer(function Settings() {
           </Pressable>
         )}
       </Section>
+
+      {/* Demo (admin only) — local fake content; never touches your real data. */}
+      {admin && (
+        <Section label="Demo">
+          {DEMO_PRESETS.map((p, i) => (
+            <View key={p.id}>
+              {i > 0 && <DottedSeparator />}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={p.label}
+                accessibilityState={{ selected: demoPreset === p.id }}
+                style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+                onPress={() => onEnterDemo(p.id)}>
+                <View style={styles.premiumText}>
+                  <Text style={styles.rowLabel}>{p.label}</Text>
+                  <Text style={styles.note}>{p.description}</Text>
+                </View>
+                {demoPreset === p.id && (
+                  <SymbolView name="checkmark" size={16} weight="semibold" tintColor={theme.colors.ink} />
+                )}
+              </Pressable>
+            </View>
+          ))}
+          {demoPreset != null && (
+            <>
+              <DottedSeparator />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Exit demo"
+                style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
+                onPress={onExitDemo}>
+                <Text style={styles.signOutText}>Exit demo — back to my account</Text>
+              </Pressable>
+            </>
+          )}
+        </Section>
+      )}
 
       {/* Account */}
       <Section label="Account">

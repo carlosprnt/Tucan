@@ -6,9 +6,15 @@ import { PREVIEW } from '@/lib/preview';
 import type { Tables } from '@/types/database';
 
 import { getUserId } from './auth';
+import { demoHabits$, inDemo } from './demo';
 import { customSynced } from './sync';
 
 export type Habit = Tables<'habits'>;
+
+/** The observable backing habit rows: the demo overlay or the synced store. */
+function habitsRoot(): Observable<Record<string, Habit>> {
+  return (inDemo() ? demoHabits$ : habits$) as Observable<Record<string, Habit>>;
+}
 
 /** All habit rows for the signed-in user, keyed by id (RLS scopes the read). */
 export const habits$ = observable<Record<string, Habit>>(
@@ -24,7 +30,7 @@ export const habits$ = observable<Record<string, Habit>>(
 
 /** Visible habits: not deleted, not archived, ordered by sort_order. */
 export function listHabits(): Habit[] {
-  const all = habits$.get() ?? {};
+  const all = habitsRoot().get() ?? {};
   return (Object.values(all) as (Habit | undefined)[])
     .filter((h): h is Habit => !!h && !h.deleted && !h.archived_at)
     .sort(
@@ -37,7 +43,7 @@ export function listHabits(): Habit[] {
 }
 
 export function getHabit(id: string): Habit | undefined {
-  return habits$[id].get();
+  return habitsRoot()[id].get();
 }
 
 export interface NewHabitInput {
@@ -53,7 +59,8 @@ export interface NewHabitInput {
 
 /** Optimistically create a habit (synced in the background). Returns its id, or '' if signed out. */
 export function createHabit(input: NewHabitInput): string {
-  const userId = getUserId();
+  const demo = inDemo();
+  const userId = getUserId() ?? (demo ? 'demo-user' : null);
   if (!userId) return '';
   const id = uuidv4();
   const now = new Date().toISOString();
@@ -83,7 +90,12 @@ export function createHabit(input: NewHabitInput): string {
     updated_at: now,
     deleted: false,
   } satisfies Omit<Habit, 'created_at'>;
-  habits$[id].set(row as Habit);
+  if (demo) {
+    // Demo rows are local-only (never synced), so created_at is set directly.
+    demoHabits$[id].set({ ...row, created_at: now } as Habit);
+  } else {
+    habits$[id].set(row as Habit);
+  }
   return id;
 }
 
@@ -103,7 +115,7 @@ export type HabitPatch = Partial<
 >;
 
 export function updateHabit(id: string, patch: HabitPatch): void {
-  (habits$[id] as Observable<Habit>).assign({
+  (habitsRoot()[id] as Observable<Habit>).assign({
     ...patch,
     updated_at: new Date().toISOString(),
   });
@@ -112,19 +124,19 @@ export function updateHabit(id: string, patch: HabitPatch): void {
 /** Soft archive: keeps history, hides from the active list. */
 export function archiveHabit(id: string): void {
   const now = new Date().toISOString();
-  (habits$[id] as Observable<Habit>).assign({ archived_at: now, updated_at: now });
+  (habitsRoot()[id] as Observable<Habit>).assign({ archived_at: now, updated_at: now });
 }
 
 /** Soft delete (tombstone) — syncs as deleted=true. */
 export function deleteHabit(id: string): void {
   const now = new Date().toISOString();
-  (habits$[id] as Observable<Habit>).assign({ deleted: true, updated_at: now });
+  (habitsRoot()[id] as Observable<Habit>).assign({ deleted: true, updated_at: now });
 }
 
 /** Persist a manual reorder of the visible habits. */
 export function reorderHabits(orderedIds: string[]): void {
   const now = new Date().toISOString();
   orderedIds.forEach((id, index) => {
-    (habits$[id] as Observable<Habit>).assign({ sort_order: index, updated_at: now });
+    (habitsRoot()[id] as Observable<Habit>).assign({ sort_order: index, updated_at: now });
   });
 }

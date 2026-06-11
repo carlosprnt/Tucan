@@ -10,11 +10,13 @@ import { PREVIEW, PREVIEW_USER_ID } from '@/lib/preview';
 
 import { auth$, endSession, initAuth } from './auth';
 import { completions$, type Completion } from './completions$';
+import { admin$, exitDemo } from './demo';
 import { habits$, type Habit } from './habits$';
 import { profiles$, type Profile } from './profile$';
 import { homeUI$ } from './ui';
 
 export * from './auth';
+export * from './demo';
 export * from './habits$';
 export * from './completions$';
 export * from './profile$';
@@ -87,6 +89,8 @@ export function storeSyncError(): Error | undefined {
  */
 export async function signOut(): Promise<void> {
   if (PREVIEW) return; // no real session in preview
+  exitDemo(); // never leave demo state for the next account
+  admin$.proOverride.set(null); // clear the admin Pro override on this device
   homeUI$.booted.set(false); // replay the skeleton + bar entrance on next login
   homeUI$.overview.set(false);
   await endSession();
