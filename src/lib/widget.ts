@@ -88,6 +88,7 @@ export function syncWidgets(): void {
         id: h.id,
         name: h.name,
         icon: h.icon ?? '',
+        due: dueIds.has(h.id),
         done: completed.has(today),
         total: stats.total,
         days: stats.days,

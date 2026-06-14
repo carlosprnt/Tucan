@@ -12,6 +12,7 @@ struct WidgetHabit: Codable, Identifiable {
   let id: String
   let name: String
   let icon: String
+  var due: Bool
   var done: Bool
   let total: Int
   let days: Int
@@ -60,7 +61,7 @@ struct ToggleHabitIntent: AppIntent {
     if let idx = data.habits.firstIndex(where: { $0.id == habitId }) {
       let newDone = !data.habits[idx].done
       data.habits[idx].done = newDone
-      data.doneCount += newDone ? 1 : -1
+      if data.habits[idx].due { data.doneCount += newDone ? 1 : -1 }
       if let encoded = try? JSONEncoder().encode(data),
          let str = String(data: encoded, encoding: .utf8) {
         defaults.set(str, forKey: DATA_KEY)
@@ -77,6 +78,8 @@ struct ToggleHabitIntent: AppIntent {
         defaults.set(str, forKey: PENDING_KEY)
       }
     }
+    // Refresh every widget so the grid, the count and the progress all update.
+    WidgetCenter.shared.reloadAllTimelines()
     return .result()
   }
 }
@@ -322,6 +325,56 @@ struct HabitCompactView: View {
   }
 }
 
+struct ChecklistRow: View {
+  var habit: WidgetHabit
+  var body: some View {
+    HStack(spacing: 8) {
+      Button(intent: ToggleHabitIntent(habitId: habit.id)) {
+        ToggleMark(done: habit.done)
+      }
+      .buttonStyle(.plain)
+      Text(habit.name).font(.subheadline).lineLimit(1)
+      Spacer(minLength: 0)
+    }
+  }
+}
+
+struct TodayHabitsView: View {
+  @Environment(\.widgetFamily) var family
+  var data: WidgetData
+
+  var body: some View {
+    let due = data.habits.filter(\.due)
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Text("Today").font(.caption).foregroundStyle(.secondary)
+        Spacer()
+        Text("\(data.doneCount)/\(data.dueCount)")
+          .font(.caption).fontWeight(.semibold).foregroundStyle(.secondary)
+      }
+      if due.isEmpty {
+        Spacer()
+        Text("Nothing due today").font(.footnote).foregroundStyle(.secondary)
+        Spacer()
+      } else if family == .systemSmall {
+        ForEach(due.prefix(4)) { ChecklistRow(habit: $0) }
+        Spacer(minLength: 0)
+      } else {
+        HStack(alignment: .top, spacing: 16) {
+          VStack(spacing: 8) {
+            ForEach(due.prefix(4)) { ChecklistRow(habit: $0) }
+          }
+          VStack(spacing: 8) {
+            ForEach(Array(due.dropFirst(4).prefix(4))) { ChecklistRow(habit: $0) }
+          }
+        }
+        Spacer(minLength: 0)
+      }
+    }
+    .padding(.top, 4)
+  }
+}
+
 struct TodayProgressView: View {
   var data: WidgetData
   var body: some View {
@@ -419,6 +472,17 @@ struct HabitCompactWidget: Widget {
   }
 }
 
+struct TodayHabitsWidget: Widget {
+  var body: some WidgetConfiguration {
+    StaticConfiguration(kind: "TucanTodayHabits", provider: ProgressProvider()) { entry in
+      TodayHabitsView(data: entry.data).widgetBackground()
+    }
+    .configurationDisplayName("Today’s habits")
+    .description("Check off today’s habits.")
+    .supportedFamilies([.systemSmall, .systemMedium])
+  }
+}
+
 struct TodayProgressWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: "TucanTodayProgress", provider: ProgressProvider()) { entry in
@@ -433,6 +497,7 @@ struct TodayProgressWidget: Widget {
 @main
 struct TucanWidgets: WidgetBundle {
   var body: some Widget {
+    TodayHabitsWidget()
     HabitCardWidget()
     HabitCompactWidget()
     HabitGridWidget()
