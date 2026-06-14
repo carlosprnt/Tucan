@@ -1,8 +1,7 @@
 import type { ExtensionStorage as ExtensionStorageInstance } from '@bacons/apple-targets';
 import { AppState, Platform } from 'react-native';
 
-import { daysBetween, isActiveDay, todayKey } from '@/lib/date';
-import { buildRecentStates, type DotState } from '@/lib/grid';
+import { addDays, daysBetween, type DateKey, isActiveDay, todayKey } from '@/lib/date';
 import { PREVIEW } from '@/lib/preview';
 import {
   completedDates,
@@ -46,8 +45,25 @@ function storage(): ExtensionStorageInstance | null {
   return cached;
 }
 
-function stateToInt(s: DotState): number {
-  return s === 'done' ? 1 : s === 'missed' ? 0 : s === 'today' ? 2 : 3;
+// Today-first grid for the widgets: index 0 is today (top-left), then past days
+// (active days only, no future). 0 missed · 1 done · 2 today-unmarked.
+function habitStates(
+  completed: Set<DateKey>,
+  startDate: DateKey,
+  count: number,
+  today: DateKey,
+  activeDays: number,
+): number[] {
+  const out: number[] = [];
+  let key: DateKey = today;
+  while (out.length < count && daysBetween(startDate, key) >= 0) {
+    if (isActiveDay(activeDays, key)) {
+      if (key === today) out.push(completed.has(key) ? 1 : 2);
+      else out.push(completed.has(key) ? 1 : 0);
+    }
+    key = addDays(key, -1);
+  }
+  return out;
 }
 
 /** Build today's payload and push it to the widgets. */
@@ -67,13 +83,7 @@ export function syncWidgets(): void {
     const habits = all.map((h) => {
       const completed = completedDates(h.id);
       const stats = statsForHabit(h.id, h.start_date, h.active_days);
-      const states = buildRecentStates({
-        completed,
-        startDate: h.start_date,
-        days: GRID_DAYS,
-        today,
-        activeDays: h.active_days,
-      }).map(stateToInt);
+      const states = habitStates(completed, h.start_date, GRID_DAYS, today, h.active_days);
       return {
         id: h.id,
         name: h.name,

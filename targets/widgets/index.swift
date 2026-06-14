@@ -134,8 +134,9 @@ struct Diamond: Shape {
 
 func dotColor(_ state: Int) -> Color {
   switch state {
-  case 1: return .primary
-  case 0: return .primary.opacity(0.16)
+  case 1: return .primary // done
+  case 0: return .primary.opacity(0.16) // missed
+  case 2: return .primary.opacity(0.38) // today, unmarked
   default: return .primary.opacity(0.08)
   }
 }
@@ -156,32 +157,32 @@ struct ToggleMark: View {
   }
 }
 
-// A grid of diamonds that fills the available width (no wasted side padding).
+// Uniform, fixed-size diamonds across every widget. Columns are chosen per
+// widget to fill the width; `states` is already today-first (index 0 = today).
+let DOT: CGFloat = 13
+let DOT_SPACING: CGFloat = 5
+
 struct DotGridView: View {
   var states: [Int]
   var columns: Int
-  var spacing: CGFloat = 5
 
   var body: some View {
-    GeometryReader { geo in
-      let dot = max(4, (geo.size.width - CGFloat(columns - 1) * spacing) / CGFloat(columns))
-      let rows = max(1, Int(ceil(Double(states.count) / Double(columns))))
-      VStack(alignment: .leading, spacing: spacing) {
-        ForEach(0 ..< rows, id: \.self) { r in
-          HStack(spacing: spacing) {
-            ForEach(0 ..< columns, id: \.self) { c in
-              let i = r * columns + c
-              if i < states.count {
-                Diamond().fill(dotColor(states[i])).frame(width: dot, height: dot)
-              } else {
-                Color.clear.frame(width: dot, height: dot)
-              }
+    let rows = max(1, Int(ceil(Double(states.count) / Double(columns))))
+    VStack(alignment: .leading, spacing: DOT_SPACING) {
+      ForEach(0 ..< rows, id: \.self) { r in
+        HStack(spacing: DOT_SPACING) {
+          ForEach(0 ..< columns, id: \.self) { c in
+            let i = r * columns + c
+            if i < states.count {
+              Diamond().fill(dotColor(states[i])).frame(width: DOT, height: DOT)
+            } else {
+              Color.clear.frame(width: DOT, height: DOT)
             }
           }
         }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
     }
+    .frame(maxWidth: .infinity, alignment: .topLeading)
   }
 }
 
@@ -217,10 +218,16 @@ struct HabitGridView: View {
       if family == .systemMedium {
         DashboardCardView(habit: h)
       } else {
+        let recent = Array(h.states.prefix(7))
+        let recentDone = recent.filter { $0 == 1 }.count
         VStack(alignment: .leading, spacing: 6) {
-          Text(h.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          HStack(alignment: .firstTextBaseline) {
+            Text(h.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            Spacer()
+            Text("\(recentDone)/\(recent.count)").font(.caption).fontWeight(.semibold).foregroundStyle(.secondary)
+          }
           Text("\(h.percent)%").font(.system(size: 28, weight: .heavy)).monospacedDigit()
-          DotGridView(states: Array(h.states.prefix(49)), columns: 7)
+          DotGridView(states: Array(h.states.prefix(28)), columns: 7)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
       }
@@ -252,9 +259,10 @@ struct DashboardCardView: View {
         }
         .buttonStyle(.plain)
       }
-      DotGridView(states: Array(habit.states.prefix(48)), columns: 16)
+      DotGridView(states: Array(habit.states.prefix(64)), columns: 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
+    .padding(.top, 6)
   }
 }
 
@@ -277,7 +285,7 @@ struct HabitCardView: View {
           }
           .buttonStyle(.plain)
         }
-        DotGridView(states: h.states, columns: 14)
+        DotGridView(states: Array(h.states.prefix(96)), columns: 16)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       } else {
         NoHabitView()
@@ -305,7 +313,7 @@ struct HabitCompactView: View {
           }
           .buttonStyle(.plain)
         }
-        DotGridView(states: Array(h.states.prefix(28)), columns: 7)
+        DotGridView(states: Array(h.states.prefix(35)), columns: 7)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       } else {
         NoHabitView()
