@@ -1,4 +1,4 @@
-import { ExtensionStorage } from '@bacons/apple-targets';
+import type { ExtensionStorage as ExtensionStorageInstance } from '@bacons/apple-targets';
 import { AppState, Platform } from 'react-native';
 
 import { daysBetween, isActiveDay, todayKey } from '@/lib/date';
@@ -19,14 +19,27 @@ const DATA_KEY = 'widgetData';
 const PENDING_KEY = 'pendingToggles';
 const GRID_DAYS = 30; // ~a month of checks for the grid widget
 
-// Created lazily + defensively: a build without the native module (e.g. before
-// the next rebuild that includes the widget target) must never crash.
-let cached: ExtensionStorage | null | undefined;
-function storage(): ExtensionStorage | null {
+// Loaded lazily + defensively: keep `@bacons/apple-targets` off the startup
+// import path, and a build without the native module must never crash.
+let mod: typeof import('@bacons/apple-targets') | null | undefined;
+function targets(): typeof import('@bacons/apple-targets') | null {
+  if (mod !== undefined) return mod;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    mod = require('@bacons/apple-targets');
+  } catch {
+    mod = null;
+  }
+  return mod ?? null;
+}
+
+let cached: ExtensionStorageInstance | null | undefined;
+function storage(): ExtensionStorageInstance | null {
   if (Platform.OS !== 'ios') return null;
   if (cached !== undefined) return cached;
+  const m = targets();
   try {
-    cached = new ExtensionStorage(APP_GROUP);
+    cached = m ? new m.ExtensionStorage(APP_GROUP) : null;
   } catch {
     cached = null;
   }
@@ -72,7 +85,7 @@ export function syncWidgets(): void {
     });
     const doneCount = habits.filter((x) => x.done).length;
     store.set(DATA_KEY, JSON.stringify({ date: today, habits, doneCount, dueCount: habits.length }));
-    ExtensionStorage.reloadWidget();
+    targets()?.ExtensionStorage.reloadWidget();
   } catch {
     // best-effort; widgets must never break the app
   }
