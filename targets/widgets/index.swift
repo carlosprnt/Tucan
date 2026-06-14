@@ -14,6 +14,7 @@ struct WidgetHabit: Codable, Identifiable {
   let icon: String
   var done: Bool
   let total: Int
+  let days: Int
   let percent: Int
   let states: [Int] // 0 missed · 1 done · 2 today · 3 future/empty
 }
@@ -37,9 +38,14 @@ func loadWidgetData() -> WidgetData {
   return decoded
 }
 
-// MARK: - Interactivity (mark a habit from the widget)
+func habit(byId id: String?) -> WidgetHabit? {
+  let data = loadWidgetData()
+  if let id, let match = data.habits.first(where: { $0.id == id }) { return match }
+  return data.habits.first
+}
 
-@available(iOS 17.0, *)
+// MARK: - Mark a habit from the widget
+
 struct ToggleHabitIntent: AppIntent {
   static var title: LocalizedStringResource = "Mark habit"
 
@@ -50,8 +56,6 @@ struct ToggleHabitIntent: AppIntent {
 
   func perform() async throws -> some IntentResult {
     guard let defaults = UserDefaults(suiteName: APP_GROUP) else { return .result() }
-
-    // Optimistically flip the displayed data so the widget updates instantly.
     var data = loadWidgetData()
     if let idx = data.habits.firstIndex(where: { $0.id == habitId }) {
       let newDone = !data.habits[idx].done
@@ -61,8 +65,6 @@ struct ToggleHabitIntent: AppIntent {
          let str = String(data: encoded, encoding: .utf8) {
         defaults.set(str, forKey: DATA_KEY)
       }
-
-      // Queue the desired state for the app to reconcile (and sync to Supabase).
       var pending: [String: Bool] = [:]
       if let raw = defaults.string(forKey: PENDING_KEY),
          let d = raw.data(using: .utf8),
@@ -77,6 +79,43 @@ struct ToggleHabitIntent: AppIntent {
     }
     return .result()
   }
+}
+
+// MARK: - Habit picker (configurable widgets)
+
+struct HabitEntity: AppEntity {
+  let id: String
+  let name: String
+
+  static var typeDisplayRepresentation: TypeDisplayRepresentation = "Habit"
+  static var defaultQuery = HabitQuery()
+
+  var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
+}
+
+struct HabitQuery: EntityQuery {
+  func entities(for identifiers: [String]) async throws -> [HabitEntity] {
+    loadWidgetData().habits
+      .filter { identifiers.contains($0.id) }
+      .map { HabitEntity(id: $0.id, name: $0.name) }
+  }
+
+  func suggestedEntities() async throws -> [HabitEntity] {
+    loadWidgetData().habits.map { HabitEntity(id: $0.id, name: $0.name) }
+  }
+
+  func defaultResult() async -> HabitEntity? {
+    loadWidgetData().habits.first.map { HabitEntity(id: $0.id, name: $0.name) }
+  }
+}
+
+struct SelectHabitIntent: WidgetConfigurationIntent {
+  static var title: LocalizedStringResource = "Select habit"
+  static var description = IntentDescription("Choose which habit to show.")
+
+  @Parameter(title: "Habit") var habit: HabitEntity?
+
+  init() {}
 }
 
 // MARK: - Shapes & helpers
@@ -101,8 +140,6 @@ func dotColor(_ state: Int) -> Color {
   }
 }
 
-// MARK: - Pieces
-
 struct ToggleMark: View {
   var done: Bool
   var body: some View {
@@ -111,86 +148,167 @@ struct ToggleMark: View {
       if done {
         Circle().fill(Color.primary)
         Image(systemName: "checkmark")
-          .font(.system(size: 11, weight: .bold))
+          .font(.system(size: 12, weight: .bold))
           .foregroundStyle(Color(UIColor.systemBackground))
       }
     }
-    .frame(width: 22, height: 22)
+    .frame(width: 26, height: 26)
   }
 }
 
+// A grid of diamonds that fills the available width (no wasted side padding).
 struct DotGridView: View {
   var states: [Int]
-  var columns: Int = 7
-  var dot: CGFloat = 10
+  var columns: Int
+  var spacing: CGFloat = 5
+
   var body: some View {
-    let rows = max(1, Int(ceil(Double(states.count) / Double(columns))))
-    VStack(spacing: 4) {
-      ForEach(0 ..< rows, id: \.self) { r in
-        HStack(spacing: 4) {
-          ForEach(0 ..< columns, id: \.self) { c in
-            let i = r * columns + c
-            if i < states.count {
-              Diamond().fill(dotColor(states[i])).frame(width: dot, height: dot)
-            } else {
-              Color.clear.frame(width: dot, height: dot)
+    GeometryReader { geo in
+      let dot = max(4, (geo.size.width - CGFloat(columns - 1) * spacing) / CGFloat(columns))
+      let rows = max(1, Int(ceil(Double(states.count) / Double(columns))))
+      VStack(alignment: .leading, spacing: spacing) {
+        ForEach(0 ..< rows, id: \.self) { r in
+          HStack(spacing: spacing) {
+            ForEach(0 ..< columns, id: \.self) { c in
+              let i = r * columns + c
+              if i < states.count {
+                Diamond().fill(dotColor(states[i])).frame(width: dot, height: dot)
+              } else {
+                Color.clear.frame(width: dot, height: dot)
+              }
             }
           }
         }
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
+  }
+}
+
+struct NoHabitView: View {
+  var body: some View {
+    Text("Open Tucan to set up").font(.footnote).foregroundStyle(.secondary)
   }
 }
 
 // MARK: - Views
 
-struct TodayHabitsView: View {
-  var data: WidgetData
-  var family: WidgetFamily
+// Renders a habit's icon — SF Symbol name or emoji.
+struct HabitIcon: View {
+  var icon: String
+  var size: CGFloat = 20
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack {
-        Text("Today").font(.caption).foregroundStyle(.secondary)
-        Spacer()
-        Text("\(data.doneCount)/\(data.dueCount)").font(.caption).bold().foregroundStyle(.secondary)
-      }
-      if data.habits.isEmpty {
-        Spacer()
-        Text("Nothing due today").font(.footnote).foregroundStyle(.secondary)
-        Spacer()
-      } else {
-        let limit = family == .systemSmall ? 3 : 5
-        ForEach(data.habits.prefix(limit)) { habit in
-          HStack(spacing: 10) {
-            if #available(iOS 17.0, *) {
-              Button(intent: ToggleHabitIntent(habitId: habit.id)) {
-                ToggleMark(done: habit.done)
-              }
-              .buttonStyle(.plain)
-            } else {
-              ToggleMark(done: habit.done)
-            }
-            Text(habit.name).font(.subheadline).lineLimit(1)
-            Spacer()
-          }
-        }
-        Spacer(minLength: 0)
-      }
+    if icon.isEmpty {
+      Image(systemName: "circle.fill").font(.system(size: size)).foregroundStyle(.primary)
+    } else if icon.allSatisfy(\.isASCII) {
+      Image(systemName: icon).font(.system(size: size)).foregroundStyle(.primary)
+    } else {
+      Text(icon).font(.system(size: size))
     }
   }
 }
 
 struct HabitGridView: View {
-  var data: WidgetData
+  @Environment(\.widgetFamily) var family
+  var habit: WidgetHabit?
+
+  var body: some View {
+    if let h = habit {
+      if family == .systemMedium {
+        DashboardCardView(habit: h)
+      } else {
+        VStack(alignment: .leading, spacing: 6) {
+          Text(h.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          Text("\(h.percent)%").font(.system(size: 28, weight: .heavy)).monospacedDigit()
+          DotGridView(states: Array(h.states.prefix(49)), columns: 7)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+      }
+    } else {
+      NoHabitView()
+    }
+  }
+}
+
+// Medium widget: a copy of the dashboard's habit card.
+struct DashboardCardView: View {
+  var habit: WidgetHabit
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 12) {
+        HabitIcon(icon: habit.icon, size: 20)
+          .frame(width: 40, height: 40)
+          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+        VStack(alignment: .leading, spacing: 1) {
+          Text(habit.name).font(.headline).lineLimit(1)
+          HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Text("\(habit.total)").font(.subheadline).fontWeight(.heavy)
+            Text("/ \(habit.days) days").font(.caption).foregroundStyle(.secondary)
+          }
+        }
+        Spacer()
+        Button(intent: ToggleHabitIntent(habitId: habit.id)) {
+          ToggleMark(done: habit.done)
+        }
+        .buttonStyle(.plain)
+      }
+      DotGridView(states: Array(habit.states.prefix(48)), columns: 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+  }
+}
+
+struct HabitCardView: View {
+  var habit: WidgetHabit?
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      if let h = habit {
+        HStack(alignment: .top) {
+          VStack(alignment: .leading, spacing: 2) {
+            Text(h.name).font(.headline).lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+              Text("\(h.total)").font(.title2).fontWeight(.heavy)
+              Text("/ \(h.days) days").font(.subheadline).foregroundStyle(.secondary)
+            }
+          }
+          Spacer()
+          Button(intent: ToggleHabitIntent(habitId: h.id)) {
+            ToggleMark(done: h.done)
+          }
+          .buttonStyle(.plain)
+        }
+        DotGridView(states: h.states, columns: 14)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      } else {
+        NoHabitView()
+      }
+    }
+  }
+}
+
+struct HabitCompactView: View {
+  var habit: WidgetHabit?
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      if let h = data.habits.first {
-        Text(h.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-        Text("\(h.percent)%").font(.system(size: 30, weight: .heavy)).monospacedDigit()
-        DotGridView(states: h.states, columns: 6)
-        Spacer(minLength: 0)
+      if let h = habit {
+        HStack(alignment: .top) {
+          VStack(alignment: .leading, spacing: 1) {
+            Text(h.name).font(.subheadline).fontWeight(.semibold).lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+              Text("\(h.total)").font(.callout).fontWeight(.heavy)
+              Text("days").font(.caption2).foregroundStyle(.secondary)
+            }
+          }
+          Spacer()
+          Button(intent: ToggleHabitIntent(habitId: h.id)) {
+            ToggleMark(done: h.done)
+          }
+          .buttonStyle(.plain)
+        }
+        DotGridView(states: Array(h.states.prefix(28)), columns: 7)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       } else {
-        Text("No habits yet").font(.footnote).foregroundStyle(.secondary)
+        NoHabitView()
       }
     }
   }
@@ -213,66 +331,89 @@ struct TodayProgressView: View {
   }
 }
 
-// MARK: - Timeline
+// MARK: - Timeline providers
 
-struct SimpleEntry: TimelineEntry {
+struct HabitEntry: TimelineEntry {
+  let date: Date
+  let habit: WidgetHabit?
+}
+
+struct HabitProvider: AppIntentTimelineProvider {
+  func placeholder(in _: Context) -> HabitEntry { HabitEntry(date: Date(), habit: habit(byId: nil)) }
+
+  func snapshot(for configuration: SelectHabitIntent, in _: Context) async -> HabitEntry {
+    HabitEntry(date: Date(), habit: habit(byId: configuration.habit?.id))
+  }
+
+  func timeline(for configuration: SelectHabitIntent, in _: Context) async -> Timeline<HabitEntry> {
+    let entry = HabitEntry(date: Date(), habit: habit(byId: configuration.habit?.id))
+    return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(60 * 30)))
+  }
+}
+
+struct ProgressEntry: TimelineEntry {
   let date: Date
   let data: WidgetData
 }
 
-struct Provider: TimelineProvider {
-  func placeholder(in _: Context) -> SimpleEntry { SimpleEntry(date: Date(), data: .empty) }
-  func getSnapshot(in _: Context, completion: @escaping (SimpleEntry) -> Void) {
-    completion(SimpleEntry(date: Date(), data: loadWidgetData()))
+struct ProgressProvider: TimelineProvider {
+  func placeholder(in _: Context) -> ProgressEntry { ProgressEntry(date: Date(), data: .empty) }
+  func getSnapshot(in _: Context, completion: @escaping (ProgressEntry) -> Void) {
+    completion(ProgressEntry(date: Date(), data: loadWidgetData()))
   }
 
-  func getTimeline(in _: Context, completion: @escaping (Timeline<SimpleEntry>) -> Void) {
-    let entry = SimpleEntry(date: Date(), data: loadWidgetData())
+  func getTimeline(in _: Context, completion: @escaping (Timeline<ProgressEntry>) -> Void) {
+    let entry = ProgressEntry(date: Date(), data: loadWidgetData())
     completion(Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(60 * 30))))
   }
 }
 
-// MARK: - Container background (iOS 17 requires it)
+// MARK: - Container background
 
 extension View {
   @ViewBuilder func widgetBackground() -> some View {
-    if #available(iOS 17.0, *) {
-      containerBackground(for: .widget) { Color(UIColor.systemBackground) }
-    } else {
-      padding().background(Color(UIColor.systemBackground))
-    }
+    containerBackground(for: .widget) { Color(UIColor.systemBackground) }
   }
 }
 
 // MARK: - Widgets
 
-struct TodayHabitsWidget: Widget {
+struct HabitGridWidget: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "TucanTodayHabits", provider: Provider()) { entry in
-      WidgetFamilyReader { family in
-        TodayHabitsView(data: entry.data, family: family).widgetBackground()
-      }
+    AppIntentConfiguration(kind: "TucanHabitGrid", intent: SelectHabitIntent.self, provider: HabitProvider()) { entry in
+      HabitGridView(habit: entry.habit).widgetBackground()
     }
-    .configurationDisplayName("Today's habits")
-    .description("Check off your habits for today.")
+    .configurationDisplayName("Habit grid")
+    .description("A habit’s consistency and recent activity.")
     .supportedFamilies([.systemSmall, .systemMedium])
   }
 }
 
-struct HabitGridWidget: Widget {
+struct HabitCardWidget: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "TucanHabitGrid", provider: Provider()) { entry in
-      HabitGridView(data: entry.data).widgetBackground()
+    AppIntentConfiguration(kind: "TucanHabitCard", intent: SelectHabitIntent.self, provider: HabitProvider()) { entry in
+      HabitCardView(habit: entry.habit).widgetBackground()
     }
-    .configurationDisplayName("Habit grid")
-    .description("A habit’s recent activity.")
-    .supportedFamilies([.systemSmall, .systemMedium])
+    .configurationDisplayName("Habit")
+    .description("A habit with its days, total and full grid.")
+    .supportedFamilies([.systemLarge])
+  }
+}
+
+struct HabitCompactWidget: Widget {
+  var body: some WidgetConfiguration {
+    AppIntentConfiguration(kind: "TucanHabitCompact", intent: SelectHabitIntent.self, provider: HabitProvider()) { entry in
+      HabitCompactView(habit: entry.habit).widgetBackground()
+    }
+    .configurationDisplayName("Habit · compact")
+    .description("A habit’s total, recent grid and a check button.")
+    .supportedFamilies([.systemSmall])
   }
 }
 
 struct TodayProgressWidget: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "TucanTodayProgress", provider: Provider()) { entry in
+    StaticConfiguration(kind: "TucanTodayProgress", provider: ProgressProvider()) { entry in
       TodayProgressView(data: entry.data).widgetBackground()
     }
     .configurationDisplayName("Today’s progress")
@@ -281,17 +422,11 @@ struct TodayProgressWidget: Widget {
   }
 }
 
-// Reads the current widget family inside the content closure.
-struct WidgetFamilyReader<Content: View>: View {
-  @Environment(\.widgetFamily) var family
-  let content: (WidgetFamily) -> Content
-  var body: some View { content(family) }
-}
-
 @main
 struct TucanWidgets: WidgetBundle {
   var body: some Widget {
-    TodayHabitsWidget()
+    HabitCardWidget()
+    HabitCompactWidget()
     HabitGridWidget()
     TodayProgressWidget()
   }

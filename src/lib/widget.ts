@@ -10,14 +10,14 @@ import {
   habits$,
   isDone,
   listHabits,
+  statsForHabit,
   toggleCompletion,
-  totalForHabit,
 } from '@/store';
 
 const APP_GROUP = 'group.com.carlosprnt.tucan';
 const DATA_KEY = 'widgetData';
 const PENDING_KEY = 'pendingToggles';
-const GRID_DAYS = 30; // ~a month of checks for the grid widget
+const GRID_DAYS = 98; // enough cells for the large habit-card widget
 
 // Loaded lazily + defensively: keep `@bacons/apple-targets` off the startup
 // import path, and a build without the native module must never crash.
@@ -56,11 +56,17 @@ export function syncWidgets(): void {
   if (!store || PREVIEW) return;
   try {
     const today = todayKey();
-    const due = listHabits().filter(
-      (h) => isActiveDay(h.active_days, today) && daysBetween(h.start_date, today) >= 0,
+    const all = listHabits();
+    // Habits scheduled today (for the progress widget's done/due counts).
+    const dueIds = new Set(
+      all
+        .filter((h) => isActiveDay(h.active_days, today) && daysBetween(h.start_date, today) >= 0)
+        .map((h) => h.id),
     );
-    const habits = due.map((h) => {
+    // ALL habits go in the payload — single-habit widgets let the user pick one.
+    const habits = all.map((h) => {
       const completed = completedDates(h.id);
+      const stats = statsForHabit(h.id, h.start_date, h.active_days);
       const states = buildRecentStates({
         completed,
         startDate: h.start_date,
@@ -68,23 +74,19 @@ export function syncWidgets(): void {
         today,
         activeDays: h.active_days,
       }).map(stateToInt);
-      // % over the days shown that are gradeable (done or missed, excl. today/future).
-      const doneDays = states.filter((s) => s === 1).length;
-      const missedDays = states.filter((s) => s === 0).length;
-      const graded = doneDays + missedDays;
-      const percent = graded > 0 ? Math.round((doneDays / graded) * 100) : 0;
       return {
         id: h.id,
         name: h.name,
         icon: h.icon ?? '',
         done: completed.has(today),
-        total: totalForHabit(h.id),
-        percent,
+        total: stats.total,
+        days: stats.days,
+        percent: stats.percent,
         states,
       };
     });
-    const doneCount = habits.filter((x) => x.done).length;
-    store.set(DATA_KEY, JSON.stringify({ date: today, habits, doneCount, dueCount: habits.length }));
+    const doneCount = habits.filter((h) => dueIds.has(h.id) && h.done).length;
+    store.set(DATA_KEY, JSON.stringify({ date: today, habits, doneCount, dueCount: dueIds.size }));
     targets()?.ExtensionStorage.reloadWidget();
   } catch {
     // best-effort; widgets must never break the app
