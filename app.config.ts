@@ -20,6 +20,10 @@ const config: ExpoConfig = {
     // Only standard HTTPS/TLS — exempt from export compliance, so TestFlight
     // won't ask the encryption question on every build.
     config: { usesNonExemptEncryption: false },
+    // Shared with the WidgetKit extension (see targets/widgets).
+    entitlements: {
+      'com.apple.security.application-groups': ['group.com.carlosprnt.tucan'],
+    },
   },
   android: {
     package: 'com.carlosprnt.tucan',
@@ -61,6 +65,7 @@ const config: ExpoConfig = {
     ],
     'expo-apple-authentication',
     '@react-native-community/datetimepicker',
+    '@bacons/apple-targets',
   ],
   experiments: {
     typedRoutes: true,

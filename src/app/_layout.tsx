@@ -10,6 +10,7 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { rescheduleAllReminders } from '@/lib/notifications';
 import { applyThemePref } from '@/lib/theme-control';
+import { initWidgets } from '@/lib/widget';
 import {
   auth$,
   currentProfile,
@@ -49,6 +50,7 @@ function RootNavigator() {
 
   useEffect(() => {
     initStore();
+    initWidgets(); // iOS widgets: push data + reconcile widget toggles (no-op elsewhere)
   }, []);
 
   // Tie RevenueCat to the signed-in user (and load prices) / reset on sign-out.
