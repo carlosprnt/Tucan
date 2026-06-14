@@ -4,10 +4,10 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { observer, use$ } from '@legendapp/state/react';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { DottedSeparator } from '@/components/DottedSeparator';
@@ -22,10 +22,14 @@ import {
   demoMode$,
   enterDemo,
   exitDemo,
+  inTrial,
   isAdmin,
   isPremium,
+  isSubscribed,
+  restorePurchases,
   setProOverride,
   signOut,
+  trialDaysLeft,
   updateProfile,
   type ThemePref,
 } from '@/store';
@@ -44,12 +48,26 @@ const Settings = observer(function Settings() {
   const premium = isPremium();
   const admin = isAdmin();
   const demoPreset = use$(demoMode$.preset);
+  const subscribed = isSubscribed();
+  const trialing = inTrial();
+  const daysLeft = trialDaysLeft();
 
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   function onTogglePro(value: boolean) {
     haptics.light();
     setProOverride(value);
+  }
+
+  async function onRestore() {
+    haptics.light();
+    const ok = await restorePurchases();
+    Alert.alert(
+      ok ? 'Purchases restored' : 'Nothing to restore',
+      ok
+        ? 'Your subscription is active again.'
+        : 'We couldn’t find an active subscription on this account.',
+    );
   }
 
   function onEnterDemo(presetId: string) {
@@ -194,13 +212,13 @@ const Settings = observer(function Settings() {
         </Text>
       </Section>
 
-      {/* Premium */}
-      <Section label="Premium">
+      {/* Subscription */}
+      <Section label="Subscription">
         {admin ? (
           <View style={styles.row}>
             <View style={styles.premiumText}>
               <Text style={styles.rowLabel}>Pro features</Text>
-              <Text style={styles.note}>Admin override — preview Pro before the paywall.</Text>
+              <Text style={styles.note}>Admin override — force Pro on/off.</Text>
             </View>
             <Switch
               value={premium}
@@ -208,27 +226,58 @@ const Settings = observer(function Settings() {
               trackColor={{ true: theme.colors.ink, false: theme.colors.separator }}
             />
           </View>
-        ) : premium ? (
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Custom habit colors</Text>
-            <Text style={styles.rowValue}>Active</Text>
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Get Tucan Premium"
-            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-            onPress={() => {
-              haptics.light();
-              Alert.alert('Tucan Premium', 'Custom habit colors and more — coming soon.');
-            }}>
-            <View style={styles.premiumText}>
-              <Text style={styles.rowLabel}>Get Tucan Premium</Text>
-              <Text style={styles.note}>Custom habit colors and more.</Text>
+        ) : subscribed ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>Tucan Pro</Text>
+              <Text style={styles.rowValue}>Active</Text>
             </View>
-            <SymbolView name="chevron.right" size={16} tintColor={theme.colors.textMuted} />
-          </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Manage subscription"
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              onPress={() => {
+                haptics.selection();
+                void Linking.openURL('https://apps.apple.com/account/subscriptions');
+              }}>
+              <Text style={styles.rowLabel}>Manage subscription</Text>
+              <SymbolView name="chevron.right" size={16} tintColor={theme.colors.textMuted} />
+            </Pressable>
+          </>
+        ) : (
+          <>
+            {trialing && (
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>Free trial</Text>
+                <Text style={styles.rowValue}>
+                  {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
+                </Text>
+              </View>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Get Tucan Pro"
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              onPress={() => {
+                haptics.light();
+                router.push('/paywall' as Href);
+              }}>
+              <View style={styles.premiumText}>
+                <Text style={styles.rowLabel}>Get Tucan Pro</Text>
+                <Text style={styles.note}>Unlimited tracking, colors and insights.</Text>
+              </View>
+              <SymbolView name="chevron.right" size={16} tintColor={theme.colors.textMuted} />
+            </Pressable>
+          </>
         )}
+        <DottedSeparator />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Restore purchases"
+          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          onPress={onRestore}>
+          <Text style={styles.rowLabel}>Restore purchases</Text>
+        </Pressable>
       </Section>
 
       {/* Demo (admin only) — local fake content; never touches your real data. */}

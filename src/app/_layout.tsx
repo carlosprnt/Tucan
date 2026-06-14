@@ -10,7 +10,14 @@ import { StyleSheet } from 'react-native-unistyles';
 
 import { rescheduleAllReminders } from '@/lib/notifications';
 import { applyThemePref } from '@/lib/theme-control';
-import { auth$, currentProfile, initStore, listHabits, type ThemePref } from '@/store';
+import {
+  auth$,
+  currentProfile,
+  initStore,
+  listHabits,
+  syncPurchasesUser,
+  type ThemePref,
+} from '@/store';
 
 export default function RootLayout() {
   return (
@@ -43,6 +50,11 @@ function RootNavigator() {
   useEffect(() => {
     initStore();
   }, []);
+
+  // Tie RevenueCat to the signed-in user (and load prices) / reset on sign-out.
+  useEffect(() => {
+    void syncPurchasesUser(session?.user?.id ?? null);
+  }, [session]);
 
   // Keep the runtime theme in sync with the user's saved preference.
   useEffect(() => {

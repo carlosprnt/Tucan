@@ -22,6 +22,7 @@ export * from './habits$';
 export * from './completions$';
 export * from './insights';
 export * from './profile$';
+export * from './subscription';
 export * from './ui';
 
 /** Start the store: wire auth so sync can begin once a session exists. */
