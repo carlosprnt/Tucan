@@ -67,6 +67,7 @@ const config: ExpoConfig = {
     'expo-apple-authentication',
     '@react-native-community/datetimepicker',
     '@bacons/apple-targets',
+    './plugins/withModularHeaders',
   ],
   experiments: {
     typedRoutes: true,
