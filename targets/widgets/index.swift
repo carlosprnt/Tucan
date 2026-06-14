@@ -357,15 +357,15 @@ struct TodayHabitsView: View {
         Text("Nothing due today").font(.footnote).foregroundStyle(.secondary)
         Spacer()
       } else if family == .systemSmall {
-        ForEach(due.prefix(4)) { ChecklistRow(habit: $0) }
+        ForEach(due.prefix(3)) { ChecklistRow(habit: $0) }
         Spacer(minLength: 0)
       } else {
         HStack(alignment: .top, spacing: 16) {
           VStack(spacing: 8) {
-            ForEach(due.prefix(4)) { ChecklistRow(habit: $0) }
+            ForEach(due.prefix(3)) { ChecklistRow(habit: $0) }
           }
           VStack(spacing: 8) {
-            ForEach(Array(due.dropFirst(4).prefix(4))) { ChecklistRow(habit: $0) }
+            ForEach(Array(due.dropFirst(3).prefix(3))) { ChecklistRow(habit: $0) }
           }
         }
         Spacer(minLength: 0)
