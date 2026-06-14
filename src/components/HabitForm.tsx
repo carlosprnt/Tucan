@@ -36,7 +36,6 @@ import {
   createHabit,
   deleteHabit,
   getHabit,
-  isPremium,
   updateHabit,
 } from '@/store';
 
@@ -53,7 +52,6 @@ export function HabitForm({ habitId }: { habitId?: string }) {
 
   const existing = habitId ? getHabit(habitId) : undefined;
   const isEdit = !!existing;
-  const hasPro = isPremium();
 
   const [name, setName] = useState(existing?.name ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
@@ -213,15 +211,7 @@ export function HabitForm({ habitId }: { habitId?: string }) {
     setIcon(s.icon);
   }
 
-  function onColorPress(value: string | null, premium: boolean) {
-    if (premium && !hasPro) {
-      haptics.warning();
-      Alert.alert('Unlock colors', 'Custom habit colors are part of Tucan Premium.', [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'See Premium', onPress: () => router.push('/settings') },
-      ]);
-      return;
-    }
+  function onColorPress(value: string | null) {
     haptics.selection();
     setColor(value);
   }
@@ -442,22 +432,17 @@ export function HabitForm({ habitId }: { habitId?: string }) {
             {HABIT_COLORS.map((opt) => {
               const selected = opt.value === color;
               const swatch = opt.value ?? theme.colors.ink;
-              const locked = opt.premium && !hasPro;
               return (
                 <Pressable
                   key={opt.label}
                   hitSlop={8}
                   accessibilityRole="button"
-                  accessibilityLabel={locked ? `${opt.label} color (premium)` : `${opt.label} color`}
+                  accessibilityLabel={`${opt.label} color`}
                   accessibilityState={{ selected }}
-                  onPress={() => onColorPress(opt.value, opt.premium)}
+                  onPress={() => onColorPress(opt.value)}
                   style={[styles.swatch, { backgroundColor: swatch }]}>
-                  {locked ? (
-                    <SymbolView name="lock.fill" size={12} tintColor={theme.colors.canvas} />
-                  ) : (
-                    selected && (
-                      <SymbolView name="checkmark" size={14} weight="bold" tintColor={theme.colors.canvas} />
-                    )
+                  {selected && (
+                    <SymbolView name="checkmark" size={14} weight="bold" tintColor={theme.colors.canvas} />
                   )}
                 </Pressable>
               );

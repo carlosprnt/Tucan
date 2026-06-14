@@ -68,11 +68,20 @@ function TodayGlyph({ size, color }: { size: number; color: string }) {
   }, [opacity]);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const sw = Math.max(1.5, size * 0.1);
+  // Inset the outline by half the stroke so the stroke stays inside the Svg
+  // bounds — otherwise the diamond's points get clipped at the edges.
+  const inset = sw / 2;
 
   return (
     <Animated.View style={style}>
       <Svg width={size} height={size}>
-        <Path d={diamondPath(size)} fill="none" stroke={color} strokeWidth={sw} />
+        <Path
+          d={diamondPath(size - sw)}
+          transform={`translate(${inset}, ${inset})`}
+          fill="none"
+          stroke={color}
+          strokeWidth={sw}
+        />
       </Svg>
     </Animated.View>
   );

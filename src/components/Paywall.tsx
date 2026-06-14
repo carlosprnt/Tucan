@@ -1,7 +1,16 @@
 import { use$ } from '@legendapp/state/react';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Image, Linking, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
@@ -18,11 +27,11 @@ import {
   trialDaysLeft,
 } from '@/store';
 
-// TODO: replace with your real hosted URLs (App Store requires both on the paywall).
-const TERMS_URL = 'https://tucan.app/terms';
-const PRIVACY_URL = 'https://tucan.app/privacy';
+// Hosted on GitHub Pages from /docs (App Store requires both on the paywall).
+const TERMS_URL = 'https://carlosprnt.github.io/Tucan/terms.html';
+const PRIVACY_URL = 'https://carlosprnt.github.io/Tucan/privacy.html';
 
-const DIAMOND = 56;
+const APP_ICON = require('../../assets/images/icon-tucan.png');
 
 type Plan = 'annual' | 'monthly';
 
@@ -37,7 +46,7 @@ export function Paywall({
   dismissible?: boolean;
   onClose?: () => void;
 }) {
-  const { theme, rt } = useUnistyles();
+  const { theme } = useUnistyles();
   const [plan, setPlan] = useState<Plan>('annual');
   const [busy, setBusy] = useState(false);
 
@@ -83,34 +92,35 @@ export function Paywall({
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        bounces={false}>
+      <FallingGlyphs />
+
+      <View style={styles.top}>
         {dismissible && (
-          <Pressable
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-            onPress={() => {
-              haptics.selection();
-              onClose?.();
-            }}
-            style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
-            <SymbolView name="xmark" size={16} weight="semibold" tintColor={theme.colors.textSecondary} />
-          </Pressable>
+          <View style={styles.header}>
+            <Pressable
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              onPress={() => {
+                haptics.selection();
+                onClose?.();
+              }}
+              style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
+              <SymbolView name="xmark" size={15} weight="semibold" tintColor={theme.colors.textSecondary} />
+            </Pressable>
+          </View>
         )}
 
         <View style={styles.hero}>
-          <Svg width={DIAMOND} height={DIAMOND}>
-            <Path d={diamondPath(DIAMOND)} fill={theme.colors.ink} />
-          </Svg>
+          <Image source={APP_ICON} style={styles.appIcon} />
           <Text style={styles.title}>Tucan Pro</Text>
-          <Text style={styles.subtitle}>
-            {trialing
-              ? `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left in your free trial. Keep going for good.`
-              : 'Keep building your habits — unlimited tracking, colors, and every insight.'}
-          </Text>
+          {trialing ? (
+            <TrialLine days={daysLeft} />
+          ) : (
+            <Text style={styles.subtitle}>
+              Your free trial has ended. Subscribe to keep tracking your habits.
+            </Text>
+          )}
         </View>
 
         <View style={styles.plans}>
@@ -123,7 +133,7 @@ export function Paywall({
             title="Annual"
             price={annualPrice}
             period="/ year"
-            note="Best value · save 58%"
+            badge="Best value · save 58%"
           />
           <PlanCard
             selected={plan === 'monthly'}
@@ -136,7 +146,9 @@ export function Paywall({
             period="/ month"
           />
         </View>
+      </View>
 
+      <View style={styles.bottom}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Subscribe"
@@ -177,9 +189,93 @@ export function Paywall({
             <Text style={styles.skipText}>Skip for now (admin)</Text>
           </Pressable>
         )}
-      </ScrollView>
-      <View style={{ height: rt.insets.bottom }} />
+      </View>
     </View>
+  );
+}
+
+// Trial countdown: bold count + muted "in your free trial".
+function TrialLine({ days }: { days: number }) {
+  return (
+    <Text style={styles.trialLine}>
+      <Text style={styles.trialDays}>
+        {days} {days === 1 ? 'day' : 'days'} left{' '}
+      </Text>
+      <Text style={styles.trialMuted}>in your free trial</Text>
+    </Text>
+  );
+}
+
+// Faint gray diamonds drifting top → bottom behind the paywall content.
+const FALLING = [
+  { x: 0.08, size: 16, dur: 6200, delay: 0 },
+  { x: 0.22, size: 24, dur: 7600, delay: 1800 },
+  { x: 0.37, size: 14, dur: 5200, delay: 600 },
+  { x: 0.5, size: 20, dur: 8000, delay: 2600 },
+  { x: 0.63, size: 26, dur: 6800, delay: 1000 },
+  { x: 0.78, size: 16, dur: 5600, delay: 3000 },
+  { x: 0.9, size: 22, dur: 7200, delay: 400 },
+  { x: 0.15, size: 18, dur: 6600, delay: 3400 },
+  { x: 0.45, size: 14, dur: 5000, delay: 4200 },
+  { x: 0.7, size: 18, dur: 7000, delay: 2200 },
+  { x: 0.3, size: 20, dur: 7800, delay: 5000 },
+  { x: 0.85, size: 14, dur: 5400, delay: 4600 },
+];
+
+function FallingGlyphs() {
+  const { theme } = useUnistyles();
+  const { width, height } = useWindowDimensions();
+  return (
+    <View pointerEvents="none" style={styles.falling}>
+      {FALLING.map((g, i) => (
+        <FallingGlyph
+          key={i}
+          left={g.x * width}
+          size={g.size}
+          duration={g.dur}
+          delay={g.delay}
+          screenH={height}
+          color={theme.colors.dotMissed}
+        />
+      ))}
+    </View>
+  );
+}
+
+function FallingGlyph({
+  left,
+  size,
+  duration,
+  delay,
+  screenH,
+  color,
+}: {
+  left: number;
+  size: number;
+  duration: number;
+  delay: number;
+  screenH: number;
+  color: string;
+}) {
+  const p = useSharedValue(0);
+
+  useEffect(() => {
+    p.value = withDelay(delay, withRepeat(withTiming(1, { duration, easing: Easing.linear }), -1, false));
+  }, [p, delay, duration]);
+
+  const travel = screenH + size * 2;
+  const style = useAnimatedStyle(() => ({
+    // Most visible as it enters at the top, fading to nothing as it falls.
+    opacity: interpolate(p.value, [0, 0.12, 1], [0, 0.85, 0]),
+    transform: [{ translateY: -size + p.value * travel }, { rotate: `${p.value * 90}deg` }],
+  }));
+
+  return (
+    <Animated.View style={[styles.fallingGlyph, { left }, style]}>
+      <Svg width={size} height={size}>
+        <Path d={diamondPath(size)} fill={color} />
+      </Svg>
+    </Animated.View>
   );
 }
 
@@ -189,14 +285,14 @@ function PlanCard({
   title,
   price,
   period,
-  note,
+  badge,
 }: {
   selected: boolean;
   onPress: () => void;
   title: string;
   price: string;
   period: string;
-  note?: string;
+  badge?: string;
 }) {
   return (
     <Pressable
@@ -205,6 +301,11 @@ function PlanCard({
       accessibilityLabel={`${title} ${price} ${period}`}
       onPress={onPress}
       style={[styles.plan, selected && styles.planSelected]}>
+      {badge && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      )}
       <View style={styles.planHead}>
         <Text style={styles.planTitle}>{title}</Text>
         <View style={[styles.radio, selected && styles.radioOn]}>
@@ -215,7 +316,6 @@ function PlanCard({
         <Text style={styles.price}>{price}</Text>
         <Text style={styles.period}>{period}</Text>
       </View>
-      {note && <Text style={[styles.planNote, selected && styles.planNoteOn]}>{note}</Text>}
     </Pressable>
   );
 }
@@ -224,29 +324,46 @@ const styles = StyleSheet.create((theme, rt) => ({
   screen: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
-  },
-  content: {
     paddingHorizontal: theme.space.xl,
-    paddingTop: rt.insets.top + theme.space.xxl,
-    paddingBottom: theme.space.xl,
-    gap: theme.space.xl,
+    paddingTop: rt.insets.top + theme.space.xs,
+    paddingBottom: rt.insets.bottom + theme.space.lg,
+    justifyContent: 'space-between',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   close: {
-    position: 'absolute',
-    top: rt.insets.top + theme.space.sm,
-    right: theme.space.lg,
     width: 32,
     height: 32,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.card,
-    zIndex: 1,
+  },
+  falling: {
+    position: 'absolute',
+    top: 0,
+    // Cancel the screen's horizontal padding so glyphs fall across the full width.
+    left: -theme.space.xl,
+    right: -theme.space.xl,
+    bottom: 0,
+  },
+  fallingGlyph: {
+    position: 'absolute',
+    top: 0,
+  },
+  top: {
+    gap: theme.space.lg,
   },
   hero: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: theme.space.md,
-    paddingTop: theme.space.lg,
+  },
+  appIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
   },
   title: {
     fontSize: theme.font.title,
@@ -257,11 +374,26 @@ const styles = StyleSheet.create((theme, rt) => ({
   subtitle: {
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: theme.space.md,
+    textAlign: 'left',
+  },
+  // Trial countdown — right-aligned; bold count + muted "in your free trial".
+  trialLine: {
+    alignSelf: 'stretch',
+    textAlign: 'left',
+    marginTop: theme.space.xs,
+  },
+  trialDays: {
+    fontSize: theme.font.heading,
+    fontWeight: theme.weight.bold,
+    color: theme.colors.textPrimary,
+  },
+  trialMuted: {
+    fontSize: theme.font.heading,
+    color: theme.colors.textSecondary,
   },
   plans: {
     gap: theme.space.md,
+    marginTop: theme.space.xl,
   },
   plan: {
     backgroundColor: theme.colors.card,
@@ -273,6 +405,20 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   planSelected: {
     borderColor: theme.colors.ink,
+  },
+  badge: {
+    position: 'absolute',
+    top: -11,
+    left: theme.space.lg,
+    backgroundColor: theme.colors.ink,
+    paddingHorizontal: theme.space.sm,
+    paddingVertical: 3,
+    borderRadius: theme.radius.pill,
+  },
+  badgeText: {
+    fontSize: theme.font.caption,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.card,
   },
   planHead: {
     flexDirection: 'row',
@@ -317,13 +463,8 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.font.body,
     color: theme.colors.textSecondary,
   },
-  planNote: {
-    fontSize: theme.font.caption,
-    color: theme.colors.textSecondary,
-  },
-  planNoteOn: {
-    color: theme.colors.textPrimary,
-    fontWeight: theme.weight.medium,
+  bottom: {
+    gap: theme.space.md,
   },
   cta: {
     height: 54,

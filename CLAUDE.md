@@ -28,7 +28,7 @@ and syncs to Supabase in the background.
 - A completion = **presence of a non-deleted row**. `date` is the **local** calendar day, never a UTC timestamp.
 - Soft-delete (`deleted`) + `updated_at` on all tables so the sync plugin can diff/replay.
 - Total = count of completions (no streaks). `%` = done / (today − start_date + 1).
-- RLS on all tables (`auth.uid()`). Color is the only premium gate in v1.
+- RLS on all tables (`auth.uid()`). Pay-to-use: free for 7 days, then a subscription is required to keep using the app. There are NO feature gates — colors, insights and everything else are free for everyone; Pro only unlocks continued use after the trial.
 
 ## Design principles
 

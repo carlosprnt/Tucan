@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
+import { useProGate } from '@/hooks/useProGate';
 import { haptics } from '@/lib/haptics';
 import { homeUI$ } from '@/store';
 
@@ -32,6 +33,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function AppBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const gate = useProGate();
   const { theme, rt } = useUnistyles();
 
   const isHome = pathname === '/';
@@ -89,7 +91,7 @@ export function AppBar() {
       <Fab
         onPress={() => {
           haptics.light();
-          router.push('/habit/new');
+          gate(() => router.push('/habit/new'));
         }}
         color={theme.colors.ink}
         tint={theme.colors.canvas}

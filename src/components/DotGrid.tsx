@@ -92,16 +92,18 @@ export function DotGrid({ states, columns, cellSize = 12, gap = 6, color }: DotG
             />
           );
         }
-        // Today, still unmarked: pulsing outline only (stroke, no fill).
+        // Today, still unmarked: pulsing outline only (stroke, no fill). Inset by
+        // half the stroke so the diamond's points aren't clipped at the cell edge.
         if (state === 'today') {
+          const sw = Math.max(1.5, cellSize * 0.1);
           return (
             <TodayCell
               key={i}
-              d={path}
-              x={x}
-              y={y}
+              d={diamondPath(cellSize - sw)}
+              x={x + sw / 2}
+              y={y + sw / 2}
               stroke={color ?? theme.colors.ink}
-              strokeWidth={Math.max(1.5, cellSize * 0.1)}
+              strokeWidth={sw}
             />
           );
         }

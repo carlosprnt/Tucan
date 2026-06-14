@@ -40,11 +40,15 @@ export function initStore(): void {
   // start is skipped — the observables' natural lazy load already pulls it, and
   // forcing here would double-fetch and make the home flicker on launch.
   let lastUserId: string | null = null;
-  let sawInitialSession = false;
   auth$.session.onChange(({ value }) => {
     const uid = value?.user?.id ?? null;
-    if (!sawInitialSession) {
-      sawInitialSession = true;
+    // During the initial hydration the synced observables lazy-load on first
+    // access, so don't force a pull. `initializing` is still true while the
+    // restored session lands; it's false by the time a real in-session sign-in
+    // happens (incl. signing in from a logged-out cold start). Keying off it —
+    // instead of "skip the first change" — fixes the case where the app opens
+    // logged out and the very first change IS the sign-in.
+    if (auth$.initializing.peek()) {
       lastUserId = uid;
       return;
     }

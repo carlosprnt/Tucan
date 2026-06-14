@@ -51,6 +51,9 @@ const Settings = observer(function Settings() {
   const subscribed = isSubscribed();
   const trialing = inTrial();
   const daysLeft = trialDaysLeft();
+  // Show "Manage subscription" when there's a real entitlement to manage: an
+  // active subscription, or Pro forced on (admin) outside the free trial.
+  const showManage = subscribed || (premium && !trialing);
 
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -182,7 +185,12 @@ const Settings = observer(function Settings() {
       {/* Reminder */}
       <Section label="Daily reminder">
         <View style={styles.row}>
-          <Text style={styles.rowLabel}>Remind me every day</Text>
+          <View style={styles.premiumText}>
+            <Text style={styles.rowLabel}>Remind me every day</Text>
+            <Text style={styles.note}>
+              We&apos;ll nudge you once a day at this time. Requires notification access.
+            </Text>
+          </View>
           <Switch
             value={reminderEnabled}
             onValueChange={onToggleReminder}
@@ -207,43 +215,28 @@ const Settings = observer(function Settings() {
             )}
           </>
         )}
-        <Text style={[styles.note, styles.reminderNote]}>
-          We&apos;ll nudge you once a day at this time. Requires notification access.
-        </Text>
       </Section>
 
       {/* Subscription */}
       <Section label="Subscription">
-        {admin ? (
-          <View style={styles.row}>
+        {showManage ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Manage subscription"
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+            onPress={() => {
+              haptics.selection();
+              void Linking.openURL('https://apps.apple.com/account/subscriptions');
+            }}>
             <View style={styles.premiumText}>
-              <Text style={styles.rowLabel}>Pro features</Text>
-              <Text style={styles.note}>Admin override — force Pro on/off.</Text>
-            </View>
-            <Switch
-              value={premium}
-              onValueChange={onTogglePro}
-              trackColor={{ true: theme.colors.ink, false: theme.colors.separator }}
-            />
-          </View>
-        ) : subscribed ? (
-          <>
-            <View style={styles.row}>
               <Text style={styles.rowLabel}>Tucan Pro</Text>
-              <Text style={styles.rowValue}>Active</Text>
+              <Text style={styles.note}>Manage your subscription</Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Manage subscription"
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-              onPress={() => {
-                haptics.selection();
-                void Linking.openURL('https://apps.apple.com/account/subscriptions');
-              }}>
-              <Text style={styles.rowLabel}>Manage subscription</Text>
+            <View style={styles.rowEnd}>
+              <Text style={styles.rowValue}>Active</Text>
               <SymbolView name="chevron.right" size={16} tintColor={theme.colors.textMuted} />
-            </Pressable>
-          </>
+            </View>
+          </Pressable>
         ) : (
           <>
             {trialing && (
@@ -257,17 +250,34 @@ const Settings = observer(function Settings() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Get Tucan Pro"
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.proCta, pressed && styles.proCtaPressed]}
               onPress={() => {
                 haptics.light();
                 router.push('/paywall' as Href);
               }}>
               <View style={styles.premiumText}>
-                <Text style={styles.rowLabel}>Get Tucan Pro</Text>
-                <Text style={styles.note}>Unlimited tracking, colors and insights.</Text>
+                <Text style={styles.proCtaTitle}>Get Tucan Pro</Text>
+                <Text style={styles.proCtaNote}>Keep using Tucan after your free trial.</Text>
               </View>
-              <SymbolView name="chevron.right" size={16} tintColor={theme.colors.textMuted} />
+              <SymbolView name="chevron.right" size={16} tintColor={theme.colors.canvas} />
             </Pressable>
+          </>
+        )}
+
+        {admin && (
+          <>
+            <DottedSeparator />
+            <View style={styles.row}>
+              <View style={styles.premiumText}>
+                <Text style={styles.rowLabel}>Pro features</Text>
+                <Text style={styles.note}>Admin override — force Pro on/off.</Text>
+              </View>
+              <Switch
+                value={premium}
+                onValueChange={onTogglePro}
+                trackColor={{ true: theme.colors.ink, false: theme.colors.separator }}
+              />
+            </View>
           </>
         )}
         <DottedSeparator />
@@ -320,8 +330,10 @@ const Settings = observer(function Settings() {
       {/* Account */}
       <Section label="Account">
         <View style={styles.row}>
-          <Text style={styles.rowLabel}>Signed in as</Text>
-          <Text style={styles.rowValue} numberOfLines={1}>
+          <Text style={[styles.rowLabel, { flexShrink: 0 }]} numberOfLines={1}>
+            Signed in as
+          </Text>
+          <Text style={[styles.rowValue, { textAlign: 'right' }]} numberOfLines={1}>
             {email}
           </Text>
         </View>
@@ -438,6 +450,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textSecondary,
     flexShrink: 1,
   },
+  rowEnd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.space.sm,
+  },
   segmented: {
     flexDirection: 'row',
     backgroundColor: theme.colors.canvas,
@@ -467,14 +484,34 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textMuted,
     marginTop: theme.space.xs,
   },
-  // Pull the reminder note up so it hugs the control like Premium's note does
-  // (the section gap would otherwise add too much space above it).
-  reminderNote: {
-    marginTop: -2,
-  },
   premiumText: {
     flex: 1,
     gap: 2,
+  },
+  proCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.space.md,
+    backgroundColor: theme.colors.ink,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.md,
+    marginVertical: theme.space.sm,
+  },
+  proCtaPressed: {
+    opacity: 0.85,
+  },
+  proCtaTitle: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.canvas,
+  },
+  proCtaNote: {
+    fontSize: theme.font.caption,
+    color: theme.colors.canvas,
+    opacity: 0.7,
+    marginTop: 2,
   },
   signOut: {
     minHeight: 52,

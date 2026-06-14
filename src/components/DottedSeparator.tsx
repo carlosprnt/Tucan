@@ -6,7 +6,7 @@ import { useUnistyles } from 'react-native-unistyles';
 export function DottedSeparator({ inset = 0 }: { inset?: number }) {
   const { theme } = useUnistyles();
   const [width, setWidth] = useState(0);
-  const dot = 3;
+  const dot = 1.5;
   const gap = 5;
   const count = width > 0 ? Math.floor((width + gap) / (dot + gap)) : 0;
 

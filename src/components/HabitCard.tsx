@@ -1,13 +1,21 @@
 import { observer } from '@legendapp/state/react';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { type LayoutChangeEvent, Pressable, Text, View } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitGlyph } from '@/components/HabitGlyph';
+import { useProGate } from '@/hooks/useProGate';
 import { todayKey } from '@/lib/date';
 import { buildRecentStates } from '@/lib/grid';
-import { completedDates, statsForHabit, toggleCompletion, type Habit } from '@/store';
+import {
+  completedDates,
+  markTrialIntroSeen,
+  shouldShowTrialIntro,
+  statsForHabit,
+  toggleCompletion,
+  type Habit,
+} from '@/store';
 
 import { DottedSeparator } from './DottedSeparator';
 import { DotGrid } from './DotGrid';
@@ -27,6 +35,7 @@ export const HabitCard = observer(function HabitCard({
   dragging?: boolean;
 }) {
   const router = useRouter();
+  const gate = useProGate();
   const { theme } = useUnistyles();
   const [gridWidth, setGridWidth] = useState(0);
 
@@ -56,7 +65,7 @@ export const HabitCard = observer(function HabitCard({
       accessibilityLabel={`${habit.name}, ${total} days completed`}
       onLongPress={onLongPress}
       delayLongPress={220}
-      onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}>
+      onPress={() => gate(() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } }))}>
       <View style={styles.top}>
         <View style={styles.iconWrap}>
           <HabitGlyph icon={habit.icon} size={22} color={habit.color ?? theme.colors.ink} />
@@ -67,19 +76,25 @@ export const HabitCard = observer(function HabitCard({
             {habit.name}
           </Text>
           <View style={styles.totalRow}>
-            <View style={styles.fraction}>
-              <Text style={styles.total}>{total}</Text>
-              <View style={styles.dot} />
-              <Text style={styles.totalDenom}>{days}</Text>
-            </View>
-            <Text style={styles.totalLabel}>days</Text>
+            <Text style={styles.total}>{total}</Text>
+            <Text style={styles.totalLabel}>/ {days} days</Text>
           </View>
         </View>
 
         <TodayToggle
           done={done}
           color={habit.color}
-          onPress={() => toggleCompletion(habit.id, today)}
+          onPress={() =>
+            gate(() => {
+              const turningOn = !done;
+              toggleCompletion(habit.id, today);
+              // First time a new user marks anything: introduce the free trial.
+              if (turningOn && shouldShowTrialIntro()) {
+                markTrialIntroSeen();
+                setTimeout(() => router.push('/paywall' as Href), 350);
+              }
+            })
+          }
         />
       </View>
 
@@ -137,33 +152,13 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'baseline',
     gap: theme.space.xs,
   },
-  fraction: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3.5,
-  },
-  // Separator dot between done / total — medium, gray, vertically centered.
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: theme.colors.textSecondary,
-    alignSelf: 'center',
-  },
   total: {
     fontSize: theme.font.title - 5,
     fontWeight: theme.weight.heavy,
     letterSpacing: -0.5,
     color: theme.colors.textPrimary,
   },
-  // Identical metrics to `total` (only the color differs) so "1/1" reads as one
-  // uniform block and the slash stays inline instead of dropping below.
-  totalDenom: {
-    fontSize: theme.font.title - 5,
-    fontWeight: theme.weight.heavy,
-    letterSpacing: -0.5,
-    color: theme.colors.textSecondary,
-  },
+  // "/ 60 days" — denominator and label share one small, muted style.
   totalLabel: {
     fontSize: theme.font.caption,
     color: theme.colors.textMuted,

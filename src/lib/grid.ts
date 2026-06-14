@@ -12,6 +12,12 @@ import { addDays, ALL_DAYS, daysBetween, isActiveDay, todayKey, type DateKey } f
 export type DotState = 'done' | 'today' | 'missed' | 'future' | 'empty';
 
 /** States for the last `days` days ending today (used by the card mini-grid). */
+/**
+ * A dense strip of the most recent ACTIVE days (skipping inactive weekdays and
+ * anything before the habit started) so the card grid is never pocked with blank
+ * cells. A brand-new habit with fewer real days than the grid holds is padded on
+ * the right with `future` ghost dots, so the grid always reads as full.
+ */
 export function buildRecentStates(opts: {
   completed: Set<DateKey>;
   startDate: DateKey;
@@ -21,20 +27,20 @@ export function buildRecentStates(opts: {
 }): DotState[] {
   const today = opts.today ?? todayKey();
   const activeDays = opts.activeDays ?? ALL_DAYS;
-  const first = addDays(today, -(opts.days - 1));
   const states: DotState[] = [];
-  for (let i = 0; i < opts.days; i++) {
-    const key = addDays(first, i);
-    if (daysBetween(opts.startDate, key) < 0 || !isActiveDay(activeDays, key)) {
-      states.push('empty');
-    } else if (opts.completed.has(key)) {
-      states.push('done');
-    } else if (key === today) {
-      states.push('today');
-    } else {
-      states.push('missed');
+
+  // Walk backwards from today, keeping only active days within the habit's life.
+  let key = today;
+  while (states.length < opts.days && daysBetween(opts.startDate, key) >= 0) {
+    if (isActiveDay(activeDays, key)) {
+      states.push(opts.completed.has(key) ? 'done' : key === today ? 'today' : 'missed');
     }
+    key = addDays(key, -1);
   }
+  states.reverse(); // oldest → newest
+
+  // Pad a young habit's remaining cells with ghost dots — never leave them blank.
+  while (states.length < opts.days) states.push('future');
   return states;
 }
 

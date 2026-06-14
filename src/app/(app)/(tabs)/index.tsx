@@ -2,7 +2,7 @@ import '@/theme/unistyles';
 
 import { observer, use$ } from '@legendapp/state/react';
 import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated as RNAnimated, Pressable, Text, View } from 'react-native';
 import DraggableFlatList, {
@@ -16,19 +16,25 @@ import { HabitCard } from '@/components/HabitCard';
 import { ChipSkeleton, HabitCardSkeleton } from '@/components/HabitCardSkeleton';
 import { OverviewCard } from '@/components/OverviewCard';
 import { TopFade } from '@/components/TopFade';
+import { useProGate } from '@/hooks/useProGate';
 import { daysBetween, isActiveDay, todayKey } from '@/lib/date';
 import { haptics } from '@/lib/haptics';
 import {
   completedDates,
   doneThisMonth,
   homeUI$,
+  inTrial,
   isHabitsReady,
+  isSubscribed,
   listHabits,
+  markTrialIntroSeen,
   mostConsistentHabit,
   reorderHabits,
+  shouldShowTrialIntro,
   statsForHabit,
   strongestWeekday,
   totalForHabit,
+  trialDaysLeft,
   type Habit,
 } from '@/store';
 
@@ -44,6 +50,7 @@ const BOOT_MIN_MS = 650;
 
 const Home = observer(function Home() {
   const { rt } = useUnistyles();
+  const router = useRouter();
   const habits = listHabits();
   const ready = isHabitsReady();
   // Data is "resolved" once we have habits OR the first remote pull finished.
@@ -64,6 +71,18 @@ const Home = observer(function Home() {
     const t = setTimeout(() => homeUI$.booted.set(true), remaining);
     return () => clearTimeout(t);
   }, [booted, dataPending]);
+
+  // First visit on a fresh (trial) account: surface the trial paywall after a
+  // few seconds so new users see how long they have and can subscribe. Shown once.
+  useEffect(() => {
+    if (!shouldShowTrialIntro()) return;
+    const t = setTimeout(() => {
+      if (!shouldShowTrialIntro()) return;
+      markTrialIntroSeen();
+      router.push('/paywall' as Href);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [router]);
 
   // Today's progress: of the habits scheduled today, how many are checked.
   const todayLabel = todayProgressLabel(habits);
@@ -176,10 +195,43 @@ function Header({
         ) : null}
       </View>
 
-      {overview && habits.length > 0 && <Summary habits={habits} />}
+      {overview && habits.length > 0 && (
+        <>
+          <Summary habits={habits} />
+          <OverviewProCard />
+        </>
+      )}
     </View>
   );
 }
+
+/** Trial upsell shown below the overview stats; opens the paywall. */
+const OverviewProCard = observer(function OverviewProCard() {
+  const router = useRouter();
+  const show = use$(() => !isSubscribed() && inTrial());
+  const days = use$(() => trialDaysLeft());
+  if (!show) return null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Tucan Pro"
+      style={({ pressed }) => [styles.proCard, pressed && styles.pressed]}
+      onPress={() => {
+        haptics.light();
+        router.push('/paywall' as Href);
+      }}>
+      <View style={styles.proInfo}>
+        <Text style={styles.proTitle}>Tucan Pro</Text>
+        <Text style={styles.proSub}>
+          {days} {days === 1 ? 'day' : 'days'} left in your free trial
+        </Text>
+      </View>
+      <View style={styles.proCtaBtn}>
+        <Text style={styles.proCtaBtnText}>View more</Text>
+      </View>
+    </Pressable>
+  );
+});
 
 const Summary = observer(function Summary({ habits }: { habits: Habit[] }) {
   const totalAll = habits.reduce((sum, h) => sum + totalForHabit(h.id), 0);
@@ -241,6 +293,7 @@ function SkeletonList() {
 
 function EmptyState() {
   const router = useRouter();
+  const gate = useProGate();
   return (
     <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
       <Text style={styles.emptyTitle}>Start your first habit</Text>
@@ -253,7 +306,7 @@ function EmptyState() {
         style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
         onPress={() => {
           haptics.light();
-          router.push('/habit/new');
+          gate(() => router.push('/habit/new'));
         }}>
         <Text style={styles.emptyButtonText}>Add your first habit</Text>
       </Pressable>
@@ -329,6 +382,40 @@ const styles = StyleSheet.create((theme, rt) => ({
     color: theme.colors.textPrimary,
     flexShrink: 1,
     textAlign: 'right',
+  },
+  proCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.space.md,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.radius.xl,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.lg,
+  },
+  proInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  proTitle: {
+    fontSize: theme.font.body,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.textPrimary,
+  },
+  proSub: {
+    fontSize: theme.font.caption,
+    color: theme.colors.textSecondary,
+  },
+  proCtaBtn: {
+    backgroundColor: theme.colors.ink,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: theme.space.lg,
+    paddingVertical: theme.space.sm,
+  },
+  proCtaBtnText: {
+    fontSize: theme.font.caption,
+    fontWeight: theme.weight.semibold,
+    color: theme.colors.canvas,
   },
   item: {
     width: '100%',

@@ -5,6 +5,7 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 
 import { HabitGlyph } from '@/components/HabitGlyph';
 import { YearHeatmap } from '@/components/YearHeatmap';
+import { useProGate } from '@/hooks/useProGate';
 import { scheduleLabel, todayKey } from '@/lib/date';
 import { completedDates, statsForHabit, type Habit } from '@/store';
 
@@ -18,6 +19,7 @@ export const OverviewCard = observer(function OverviewCard({
 }) {
   const { theme } = useUnistyles();
   const router = useRouter();
+  const gate = useProGate();
   const today = todayKey();
   const completed = completedDates(habit.id);
   // done days / active days elapsed — e.g. 5/50 (denominator in gray).
@@ -27,7 +29,7 @@ export const OverviewCard = observer(function OverviewCard({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${habit.name}, ${total} of ${days} days completed`}
-      onPress={() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } })}
+      onPress={() => gate(() => router.push({ pathname: '/habit/[id]', params: { id: habit.id } }))}
       onLongPress={onLongPress}
       delayLongPress={220}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>

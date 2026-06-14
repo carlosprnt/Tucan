@@ -1,6 +1,8 @@
 import { observable } from '@legendapp/state';
+import { NativeModules } from 'react-native';
 import type { CustomerInfo, LOG_LEVEL, PurchasesPackage } from 'react-native-purchases';
 
+import { storage } from '@/lib/mmkv';
 import { PREVIEW } from '@/lib/preview';
 
 import { admin$ } from './demo';
@@ -64,8 +66,33 @@ export function hasPro(): boolean {
   return isSubscribed() || inTrial();
 }
 
-/** Alias used across the app for feature gating (colors, etc.). */
+/** Alias for `hasPro` — whether the user may keep using the app (pay-to-use). */
 export const isPremium = hasPro;
+
+// --- One-time "free trial" intro paywall ------------------------------------
+
+const TRIAL_INTRO_KEY = 'paywall.trialIntroSeen';
+
+export function hasSeenTrialIntro(): boolean {
+  return storage.getString(TRIAL_INTRO_KEY) === '1';
+}
+
+export function markTrialIntroSeen(): void {
+  storage.set(TRIAL_INTRO_KEY, '1');
+}
+
+/**
+ * Whether to surface the "7 days free, then paid" intro paywall — shown once,
+ * the first time a brand-new user checks off a habit. Never to subscribers,
+ * admins (override), or in preview.
+ */
+export function shouldShowTrialIntro(): boolean {
+  if (PREVIEW) return false;
+  if (hasSeenTrialIntro()) return false;
+  if (admin$.proOverride.get() != null) return false;
+  if (isSubscribed()) return false;
+  return inTrial();
+}
 
 // --- RevenueCat wiring ------------------------------------------------------
 
@@ -77,6 +104,11 @@ let Purchases: PurchasesModule['default'] | null = null;
 let logLevelWarn: LOG_LEVEL | null = null;
 function loadSDK(): boolean {
   if (Purchases) return true;
+  // The native module ships only in builds compiled AFTER adding the dependency.
+  // On an older dev build (e.g. JS reload over Wi-Fi) it's absent — and requiring
+  // the JS wrapper would construct `new NativeEventEmitter(null)` and throw. The
+  // library reads exactly this module, so its presence is the safe gate.
+  if (NativeModules.RNPurchases == null) return false;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('react-native-purchases') as PurchasesModule;
