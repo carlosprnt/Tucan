@@ -16,7 +16,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     bundleIdentifier: 'com.carlosprnt.tucan',
-    buildNumber: '6',
+    buildNumber: '7',
     supportsTablet: false,
     // Only standard HTTPS/TLS — exempt from export compliance, so TestFlight
     // won't ask the encryption question on every build.
