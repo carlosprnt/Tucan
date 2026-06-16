@@ -36,6 +36,11 @@ import {
 
 const THEME_OPTIONS: ThemePref[] = ['light', 'dark', 'auto'];
 
+// Hosted legal/support pages (same as the paywall + sign-in links).
+const PRIVACY_URL = 'https://carlosprnt.github.io/Tucan/privacy.html';
+const TERMS_URL = 'https://carlosprnt.github.io/Tucan/terms.html';
+const SUPPORT_URL = 'https://carlosprnt.github.io/Tucan/support.html';
+
 const Settings = observer(function Settings() {
   const { theme } = useUnistyles();
   const router = useRouter();
@@ -345,6 +350,32 @@ const Settings = observer(function Settings() {
           onPress={confirmSignOut}>
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>
+      </Section>
+
+      {/* About / legal */}
+      <Section label="About">
+        {(
+          [
+            ['Privacy Policy', PRIVACY_URL],
+            ['Terms of Use', TERMS_URL],
+            ['Support', SUPPORT_URL],
+          ] as const
+        ).map(([label, url], i) => (
+          <View key={label}>
+            {i > 0 && <DottedSeparator />}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              onPress={() => {
+                haptics.selection();
+                void Linking.openURL(url);
+              }}>
+              <Text style={styles.rowLabel}>{label}</Text>
+              <SymbolView name="chevron.right" size={16} tintColor={theme.colors.textMuted} />
+            </Pressable>
+          </View>
+        ))}
       </Section>
 
       <Pressable
