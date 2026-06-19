@@ -1,0 +1,28 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "info": {
+      "en-US": {
+        "title": "Tucan — Daily Habits",
+        "subtitle": "Minimalist habit tracking",
+        "description": "Tucan is a calm, monochrome habit tracker. No streaks to break, no noise — just a quiet dot grid that fills in as you show up.\n\nMark a habit done with a single tap. It's instant, works offline, and keeps a clean record of every day you keep.\n\nWHY TUCAN\n• Binary habits: done or not done, nothing to overthink\n• A dot grid as the hero — see your whole history at a glance\n• Monochrome by design, so the data is the focus\n• Offline-first: marking is instant, syncing happens in the background\n• Gentle daily reminders, on your schedule\n\nTUCAN PRO\nTucan starts with a 7-day free trial. After the trial, a Tucan Pro subscription keeps your habit tracking going. There are no feature gates — everything is included.\n• Annual — €9.99/year\n• Monthly — €1.99/month\nPrices may vary by region and are shown in the app before you purchase. Payment is charged to your Apple ID at confirmation of purchase. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in App Store → your account → Subscriptions.\n\nPrivacy Policy: https://carlosprnt.github.io/Tucan/privacy.html\nTerms of Use (EULA): https://carlosprnt.github.io/Tucan/terms.html",
+        "keywords": [
+          "habit",
+          "habit tracker",
+          "habits",
+          "routine",
+          "daily",
+          "minimalist",
+          "tracker",
+          "goals",
+          "streak",
+          "productivity"
+        ],
+        "marketingUrl": "https://carlosprnt.github.io/Tucan/",
+        "supportUrl": "https://carlosprnt.github.io/Tucan/support.html",
+        "privacyPolicyUrl": "https://carlosprnt.github.io/Tucan/privacy.html"
+      }
+    },
+    "categories": ["HEALTH_AND_FITNESS", "PRODUCTIVITY"]
+  }
+}
