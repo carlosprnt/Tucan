@@ -14,6 +14,18 @@ export function isAdmin(): boolean {
   return (auth$.session.get()?.user?.email ?? '').toLowerCase() === ADMIN_EMAIL;
 }
 
+/**
+ * Comped accounts: Pro forever, never hit the paywall. Add emails here (lowercase).
+ * Client-side grant — fine for personal comps; for anything revocable/at scale,
+ * prefer a RevenueCat promotional entitlement instead.
+ */
+export const LIFETIME_PRO_EMAILS = ['carlosprnt@gmail.com', 'pchicoza@gmail.com'];
+
+export function isLifetimePro(): boolean {
+  const email = (auth$.session.get()?.user?.email ?? '').toLowerCase();
+  return LIFETIME_PRO_EMAILS.some((e) => e.toLowerCase() === email);
+}
+
 // ---------------------------------------------------------------------------
 // Admin-only "force Pro" override. Persisted locally (MMKV), NEVER synced to
 // Supabase — it's a dev switch to preview Pro features before the paywall.

@@ -5,7 +5,7 @@ import type { CustomerInfo, LOG_LEVEL, PurchasesPackage } from 'react-native-pur
 import { storage } from '@/lib/mmkv';
 import { PREVIEW } from '@/lib/preview';
 
-import { admin$ } from './demo';
+import { admin$, isLifetimePro } from './demo';
 import { currentProfile } from './profile$';
 
 /** RevenueCat entitlement that unlocks the app. Configure this id in RevenueCat. */
@@ -63,6 +63,7 @@ export function hasPro(): boolean {
   if (PREVIEW) return true;
   const override = admin$.proOverride.get();
   if (override != null) return override;
+  if (isLifetimePro()) return true; // comped accounts — Pro forever
   return isSubscribed() || inTrial();
 }
 
